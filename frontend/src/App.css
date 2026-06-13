@@ -303,6 +303,64 @@
   letter-spacing: 0.7px;
 }
 
+.generate-actions {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.generate-button {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-width: 210px;
+  padding: 14px 22px;
+  border: 1px solid rgba(110, 231, 183, 0.3);
+  border-radius: 12px;
+  color: #ecfdf5;
+  background: linear-gradient(135deg, #059669, #0d9488);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(5, 150, 105, 0.22);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.generate-button:hover:not(:disabled) {
+  box-shadow: 0 16px 36px rgba(5, 150, 105, 0.3);
+  transform: translateY(-2px);
+}
+
+.generate-button:disabled {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+.button-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(236, 253, 245, 0.35);
+  border-top-color: #ecfdf5;
+  border-radius: 50%;
+  animation: button-spin 700ms linear infinite;
+}
+
+.job-reference {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.job-reference code {
+  color: #c4b5fd;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
 .toast {
   position: fixed;
   top: 24px;
@@ -409,6 +467,12 @@
 
   to {
     transform: scaleX(0);
+  }
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -12,12 +12,18 @@ type ToastMessage = {
     message: string
 }
 
+type UploadResponse = {
+    jobId: string
+}
+
 function App() {
     const allowedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx']
     const [showUpload, setShowUpload] = useState(false)
 
     // App owns the selected file because multiple UI states may depend on it later.
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [isUploading, setIsUploading] = useState(false)
+    const [jobId, setJobId] = useState<string | null>(null)
     const [toast, setToast] = useState<ToastMessage | null>(null)
 
     // Start a timer whenever a notification appears.
@@ -39,6 +45,8 @@ function App() {
     }
 
     function processFile(file: File | null) {
+        setJobId(null)
+
         if (file === null) {
             setSelectedFile(null)
             setToast(null)
@@ -83,6 +91,46 @@ function App() {
         processFile(file)
     }
 
+    async function handleGenerateClick() {
+        if (selectedFile === null || isUploading) {
+            return
+        }
+
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+
+        setIsUploading(true)
+        setJobId(null)
+
+        try {
+            const response = await fetch('/api/flashcards/upload', {
+                method: 'POST',
+                body: formData,
+            })
+
+            if (!response.ok) {
+                throw new Error(`Upload failed with status ${response.status}`)
+            }
+
+            const uploadResponse: UploadResponse = await response.json()
+            setJobId(uploadResponse.jobId)
+            setToast({
+                type: 'success',
+                title: 'Generation started',
+                message: `${selectedFile.name} was sent for processing.`,
+            })
+        } catch (error) {
+            console.error('Failed to upload document:', error)
+            setToast({
+                type: 'error',
+                title: 'Upload failed',
+                message: 'Could not reach the server. Please try again.',
+            })
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
     return (
         <main className="app">
             <section className="hero">
@@ -103,13 +151,39 @@ function App() {
                     Create flashcards
                 </button>
                 {showUpload && (
-                    /* State and callback functions pass from App to UploadArea as props. */
-                    <UploadArea
-                        selectedFile={selectedFile}
-                        onFileChange={handleFileChange}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                    />
+                    <>
+                        {/* State and callback functions pass from App to UploadArea as props. */}
+                        <UploadArea
+                            selectedFile={selectedFile}
+                            onFileChange={handleFileChange}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                        />
+
+                        {selectedFile && (
+                            <div className="generate-actions">
+                                <button
+                                    className="generate-button"
+                                    type="button"
+                                    disabled={isUploading}
+                                    onClick={handleGenerateClick}
+                                >
+                                    {isUploading && (
+                                        <span className="button-spinner" aria-hidden="true" />
+                                    )}
+                                    {isUploading
+                                        ? 'Sending document...'
+                                        : 'Generate flashcards'}
+                                </button>
+
+                                {jobId && (
+                                    <p className="job-reference">
+                                        Job started: <code>{jobId}</code>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
             {toast && (
