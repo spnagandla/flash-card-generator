@@ -8,9 +8,9 @@ The React frontend accepts a document and sends it to a Spring Boot API. The bac
 
 ## Architecture
 
-![AI Flashcard Generator architecture](docs/architecture.svg)
+![AI Flashcard Generator architecture](docs/architecture.png)
 
-The editable diagrams.net source is available at [docs/architecture.drawio](docs/architecture.drawio). Open it in [draw.io](https://app.diagrams.net/) to modify the architecture.
+The editable diagrams.net source is available at [docs/architecture.drawio](docs/architecture.drawio). Open it in [draw.io](https://app.diagrams.net/) to modify the architecture. A scalable rendered version is also available at [docs/architecture.svg](docs/architecture.svg).
 
 ## Processing Flow
 
@@ -245,6 +245,7 @@ Restart the Vite server after changing `vite.config.ts`.
 flash-card-generator/
 ├── docs/
 │   ├── architecture.drawio
+│   ├── architecture.png
 │   └── architecture.svg
 ├── frontend/
 │   ├── src/
@@ -314,4 +315,3 @@ Backend:
 ```powershell
 mvn test
 ```
-
