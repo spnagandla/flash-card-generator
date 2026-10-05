@@ -52,6 +52,8 @@ public class InfisicalPropertySource implements ApplicationContextInitializer<Co
                 if (key.equals("GEMINI_API_KEY")) {
                     secretMap.put("GEMINI_API_KEY", value);
                     secretMap.put("gemini.api.key", value);
+                    secretMap.put("spring.ai.google.genai.api-key", value);
+                    secretMap.put("spring.ai.model.chat", "google-genai");
                 }
 
                 if (key.equals("FIRE_BASE_SERVICE_ACCOUNT_JSON")) {
