@@ -62,16 +62,56 @@ User clicks Generate Flashcards
 
 ## Frontend Work For Later
 
-1. Poll `GET /api/flashcards/status/{jobId}`.
+Latest daily handoff:
+
+- `tasks/daily-memory-2026-06-26.md`
+
+Tomorrow's frontend starting point from that handoff: build the status-check UI after upload.
+
+1. Poll `GET /api/flashcards/status/{jobId}` after upload.
 2. Display `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` states.
 3. Fetch `GET /api/flashcards/result/{jobId}` after completion.
-4. Build the interactive flashcard deck UI.
-5. Add retry, cancel, replace, and remove-file interactions.
-6. Add accessibility review for keyboard focus and screen readers.
-7. Add component and request tests.
-8. Enforce a frontend file-size limit.
-9. Reconcile the UI's displayed 25 MB limit with Spring Boot's current 20 MB multipart limit.
-10. Move API calls into a small API/service module when frontend work resumes.
+4. Render the generated flashcard deck.
+5. Build four answer options from `answer + distractors`.
+6. Shuffle options so the correct answer is not always first.
+7. Let the user select one option.
+8. Show correct or incorrect feedback.
+9. If wrong, show the correct answer and the selected distractor's explanation.
+10. Show the main explanation and source snippet.
+11. Add next/previous card navigation.
+12. Track score and show a final summary.
+
+Additional frontend work after that:
+
+- Add retry, cancel, replace, and remove-file interactions.
+- Add accessibility review for keyboard focus and screen readers.
+- Add component and request tests.
+- Enforce a frontend file-size limit.
+- Reconcile the UI's displayed 25 MB limit with Spring Boot's current 20 MB multipart limit.
+- Move API calls into a small API/service module when frontend work resumes.
+
+Planned flashcard interaction flow:
+
+```text
+Upload file
+  -> backend returns jobId
+  -> frontend polls job status
+  -> status becomes COMPLETED
+  -> frontend fetches result
+  -> user studies one card at a time
+  -> user selects one of four options
+  -> UI shows correct/incorrect feedback
+  -> user moves to next card
+  -> final score summary appears
+```
+
+Flashcard option model:
+
+```text
+options = [answer, ...distractors]
+```
+
+The backend already returns `answer` and exactly three `distractors` in the intended schema. The frontend needs to shuffle and display those four options.
 
 ## Verification At Pause Point
 
