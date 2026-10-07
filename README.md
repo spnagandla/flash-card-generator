@@ -239,6 +239,26 @@ http://localhost:5173
 
 Restart the Vite server after changing `vite.config.ts`.
 
+### View Logs And Traces With SigNoz
+
+You can run the backend, Redis, and SigNoz together with Docker Compose:
+
+```powershell
+docker compose up --build
+```
+
+Run this from a terminal that has `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, and `INFISICAL_PROJECT_ID` available so the backend container can load secrets.
+
+Then open the SigNoz dashboard:
+
+```text
+http://localhost:3301
+```
+
+Click **Logs** to view application logs, or click **Traces** to inspect API request traces for `flash-card-generator`.
+
+Full setup and troubleshooting steps are documented in [docs/signoz-observability.md](docs/signoz-observability.md).
+
 ## Project Structure
 
 ```text

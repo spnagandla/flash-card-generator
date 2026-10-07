@@ -70,6 +70,7 @@ public class InfisicalPropertySource implements ApplicationContextInitializer<Co
                     .getPropertySources()
                     .addFirst(new MapPropertySource("infisical", secretMap));
 
+//            log.info("Loaded {} app secrets from Infisical.", secretMap.values());
             log.info("Loaded {} app secrets from Infisical.", secretMap.size());
         } catch (InfisicalException e) {
             throw new RuntimeException("Infisical auth/fetch failed: " + e.getMessage(), e);

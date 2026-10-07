@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        OTEL_VERSION: ${OTEL_VERSION:-2.12.0}
+    container_name: flashcard-app
+    depends_on:
+      - redis
+      - signoz
+    environment:
+      INFISICAL_CLIENT_ID: ${INFISICAL_CLIENT_ID}
+      INFISICAL_CLIENT_SECRET: ${INFISICAL_CLIENT_SECRET}
+      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID}
+      REDIS_URL: redis://redis:6379
+      OTEL_SERVICE_NAME: flash-card-generator
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: flashcard-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  signoz:
+    image: signoz/signoz-standalone:latest
+    container_name: flashcard-signoz
+    privileged: true
+    ports:
+      - "3301:8080"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - signoz-clickhouse:/var/lib/clickhouse
+      - signoz-data:/var/lib/signoz
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  signoz-clickhouse:
+  signoz-data:

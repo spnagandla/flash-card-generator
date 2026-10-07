@@ -109,7 +109,13 @@
         <dependency>
             <groupId>com.infisical</groupId>
             <artifactId>sdk</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.squareup.okio</groupId>
+                    <artifactId>okio</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

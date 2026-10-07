@@ -1,0 +1,17 @@
+services:
+  signoz:
+    image: signoz/signoz-standalone:latest
+    container_name: flashcard-signoz
+    privileged: true
+    ports:
+      - "3301:8080"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - signoz-clickhouse:/var/lib/clickhouse
+      - signoz-data:/var/lib/signoz
+    restart: unless-stopped
+
+volumes:
+  signoz-clickhouse:
+  signoz-data:
