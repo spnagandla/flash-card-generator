@@ -1,5 +1,7 @@
 # Firebase Save Status Follow-Up
 
+> Superseded on October 17, 2026: Firebase was replaced by PostgreSQL persistence. Repository save failures now propagate into `FlashcardService`, where the existing exception handler marks the Redis job as `FAILED`.
+
 ## Issue
 
 Job status currently becomes `COMPLETED` even if saving the generated flashcards to Firebase fails.

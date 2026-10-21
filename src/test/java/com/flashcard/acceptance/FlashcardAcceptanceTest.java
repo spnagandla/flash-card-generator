@@ -10,8 +10,9 @@ import com.flashcard.model.UploadResponse;
 import com.flashcard.parser.PdfParser;
 import com.flashcard.parser.PptParser;
 import com.flashcard.parser.WordParser;
-import com.flashcard.service.FirebaseService;
+import com.flashcard.service.DeckPersistenceService;
 import com.flashcard.service.FlashcardService;
+import com.flashcard.service.FlashcardValidationService;
 import com.flashcard.service.GeminiService;
 import com.flashcard.service.JobService;
 import com.flashcard.service.ParserService;
@@ -69,7 +70,7 @@ class FlashcardAcceptanceTest {
     private GeminiService geminiService;
 
     @Mock
-    private FirebaseService firebaseService;
+    private DeckPersistenceService deckPersistenceService;
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -103,7 +104,14 @@ class FlashcardAcceptanceTest {
                 new PptParser()
         ));
 
-        flashcardService = new FlashcardService(parserService, jobService, geminiService, firebaseService);
+        flashcardService = new FlashcardService(
+                parserService,
+                jobService,
+                geminiService,
+                new FlashcardValidationService(),
+                objectMapper,
+                deckPersistenceService
+        );
         FlashcardController controller = new FlashcardController(jobService, flashcardService, objectMapper);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
@@ -225,8 +233,9 @@ class FlashcardAcceptanceTest {
         // Source snippet must be present
         assertThat(card.getSourceSnippet()).isNotBlank();
 
-        // Verify Firebase was requested to persist the deck
-        verify(firebaseService, times(1)).saveDeck(eq(jobId), eq("k8s-guide.pdf"), anyString());
+        // Verify PostgreSQL persistence was requested for the validated deck
+        verify(deckPersistenceService, times(1))
+                .saveDeck(eq(jobId), eq("k8s-guide.pdf"), anyList());
     }
 
     @Test

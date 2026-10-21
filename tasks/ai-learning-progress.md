@@ -10,6 +10,8 @@ Current roadmap phase:
 
 - **Phase 0: AI, Machine Learning, And LLM Foundations**
 
+Implementation progress has also reached the first part of Phase 4: Gemini JSON is parsed into typed flashcards, validated, and persisted to PostgreSQL instead of Firebase.
+
 Next lesson:
 
 1. AI versus machine learning versus deep learning versus generative AI
@@ -33,8 +35,9 @@ Uploaded document
   -> ParserService extracts text
   -> GeminiService builds a prompt
   -> Gemini REST API generates JSON text
-  -> FlashcardService stores the raw JSON string
-  -> FirebaseService stores the deck
+  -> FlashcardService parses List<Flashcard>
+  -> FlashcardValidationService validates the cards
+  -> DeckPersistenceService stores the typed deck in PostgreSQL JSONB
   -> Redis job becomes COMPLETED or FAILED
 ```
 
@@ -43,7 +46,9 @@ Relevant files:
 - `src/main/java/com/flashcard/service/GeminiService.java`
 - `src/main/java/com/flashcard/service/FlashcardService.java`
 - `src/main/java/com/flashcard/model/Flashcard.java`
-- `src/main/java/com/flashcard/service/FirebaseService.java`
+- `src/main/java/com/flashcard/service/DeckPersistenceService.java`
+- `src/main/java/com/flashcard/model/FlashcardDeck.java`
+- `src/main/java/com/flashcard/repository/FlashcardDeckRepository.java`
 - `src/main/java/com/flashcard/service/ParserService.java`
 
 ## AI Concepts Already Present
@@ -58,20 +63,13 @@ Relevant files:
 
 ## Important Current Weakness
 
-Gemini output is currently treated as a trusted raw `String`.
+The application now proves that Gemini returns a JSON array that maps to `Flashcard` objects and checks required text, collection sizes, and blank collection values. Remaining guardrails include:
 
-The prompt asks for valid JSON, but the application does not prove that:
-
-- the response is a JSON array,
-- every item maps to `Flashcard`,
-- required text fields are present,
-- each card has exactly three distractors,
-- `incorrectExplanations` matches the distractor count,
-- enum-like fields contain allowed values,
-- confidence is between `0.0` and `1.0`,
-- unsupported or malformed cards are rejected.
-
-The job can therefore become `COMPLETED` with invalid AI output.
+- allowed difficulty values,
+- allowed cognitive-level values,
+- confidence between `0.0` and `1.0`,
+- duplicate questions and answers,
+- evidence support against the source document.
 
 ## First Implementation Lesson After Foundations
 
@@ -94,7 +92,7 @@ Recommended learning steps:
 3. Validate required fields and collection sizes.
 4. Validate difficulty, cognitive level, and confidence ranges.
 5. Return typed flashcards from `GeminiService` instead of a raw string.
-6. Store structured flashcard objects in Firestore.
+6. Store structured flashcard objects in PostgreSQL JSONB.
 7. Add unit tests for valid and invalid model output.
 8. Consider one controlled retry for malformed model output.
 
@@ -108,12 +106,12 @@ The complete production sequence is maintained in:
 
 After structured validation is stable:
 
-1. Fix Firebase failure propagation so failed persistence marks the job `FAILED`.
+1. Verify the persistence flow against the Neon database.
 2. Add document chunking for long inputs.
 3. Generate cards per chunk.
 4. Merge results and remove duplicates.
 5. Add generation quality evaluation.
-6. Add embeddings and vector search.
+6. Add embeddings and vector search with PostgreSQL and pgvector.
 7. Build grounded RAG and an Ask My Document feature.
 8. Add source citations and user feedback.
 

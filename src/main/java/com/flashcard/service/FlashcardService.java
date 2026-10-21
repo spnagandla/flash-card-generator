@@ -1,10 +1,15 @@
 package com.flashcard.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flashcard.model.Flashcard;
 import com.flashcard.model.FlashcardJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Service responsible for the asynchronous processing of flashcards.
@@ -18,7 +23,9 @@ public class FlashcardService {
     private final ParserService parserService;
     private final JobService jobService;
     private final GeminiService geminiService;
-    private final FirebaseService firebaseService;
+    private final FlashcardValidationService flashcardValidationService;
+    private final ObjectMapper objectMapper;
+    private final DeckPersistenceService deckPersistenceService;
 
     /**
      * The core background task. 
@@ -51,11 +58,18 @@ public class FlashcardService {
 
             log.info("Sending extracted text to Gemini for job: {}", jobId);
             String flashcardsJson = geminiService.generateFlashcards(text);
-            job.setFlashcardsJson(flashcardsJson);
+            List<Flashcard> flashCards = objectMapper.readValue(
+                    flashcardsJson,
+                    new TypeReference<>() {
+                    }
+            );
+            flashcardValidationService.validate(flashCards);
 
-            // Save to Firebase permanently
-            log.info("Saving generated cards to Firebase for job: {}", jobId);
-            firebaseService.saveDeck(jobId, job.getFileName(), flashcardsJson);
+            String validatedFlashcardsJson = objectMapper.writeValueAsString(flashCards);
+            job.setFlashcardsJson(validatedFlashcardsJson);
+
+            log.info("Saving validated cards to PostgreSQL for job: {}", jobId);
+            deckPersistenceService.saveDeck(jobId, job.getFileName(), flashCards);
             
             // 5. Mark as COMPLETED (for now)
             job.setStatus("COMPLETED");

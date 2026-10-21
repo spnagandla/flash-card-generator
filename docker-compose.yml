@@ -7,12 +7,16 @@ services:
     container_name: flashcard-app
     depends_on:
       - redis
+      - postgres
       - signoz
     environment:
       INFISICAL_CLIENT_ID: ${INFISICAL_CLIENT_ID}
       INFISICAL_CLIENT_SECRET: ${INFISICAL_CLIENT_SECRET}
       INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID}
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/flashcards}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-flashcard}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-flashcard}
       OTEL_SERVICE_NAME: flash-card-generator
       OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
@@ -32,6 +36,19 @@ services:
       - redis-data:/data
     restart: unless-stopped
 
+  postgres:
+    image: postgres:17-alpine
+    container_name: flashcard-postgres
+    environment:
+      POSTGRES_DB: flashcards
+      POSTGRES_USER: ${DATABASE_USERNAME:-flashcard}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-flashcard}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   signoz:
     image: signoz/signoz-standalone:latest
     container_name: flashcard-signoz
@@ -47,5 +64,6 @@ services:
 
 volumes:
   redis-data:
+  postgres-data:
   signoz-clickhouse:
   signoz-data:

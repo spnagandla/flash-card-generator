@@ -50,7 +50,7 @@
         <mxCell id="gemini-service" value="GeminiService&#xa;Build prompt, call Gemini API, extract generated JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#166534;strokeColor=#86EFAC;fontColor=#F0FDF4;" vertex="1" parent="1">
           <mxGeometry x="710" y="455" width="190" height="95" as="geometry"/>
         </mxCell>
-        <mxCell id="firebase-service" value="FirebaseService&#xa;Persist generated deck" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#166534;strokeColor=#86EFAC;fontColor=#F0FDF4;" vertex="1" parent="1">
+        <mxCell id="firebase-service" value="DeckPersistenceService&#xa;Persist validated deck" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#166534;strokeColor=#86EFAC;fontColor=#F0FDF4;" vertex="1" parent="1">
           <mxGeometry x="940" y="470" width="170" height="75" as="geometry"/>
         </mxCell>
         <mxCell id="job-states" value="Job lifecycle&#xa;PENDING → PROCESSING&#xa;→ COMPLETED / FAILED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064E3B;strokeColor=#34D399;fontColor=#ECFDF5;fontStyle=1;" vertex="1" parent="1">
@@ -63,10 +63,10 @@
         <mxCell id="gemini" value="Google Gemini API&#xa;Generates flashcard JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B21A8;strokeColor=#D8B4FE;fontColor=#FAF5FF;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1240" y="345" width="260" height="85" as="geometry"/>
         </mxCell>
-        <mxCell id="firestore" value="Firebase Firestore&#xa;Permanent deck storage" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#6B21A8;strokeColor=#D8B4FE;fontColor=#FAF5FF;" vertex="1" parent="1">
+        <mxCell id="firestore" value="PostgreSQL JSONB&#xa;Permanent deck storage" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#6B21A8;strokeColor=#D8B4FE;fontColor=#FAF5FF;" vertex="1" parent="1">
           <mxGeometry x="1240" y="505" width="260" height="100" as="geometry"/>
         </mxCell>
-        <mxCell id="infisical" value="Infisical&#xa;Gemini, Firebase, Redis secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#581C87;strokeColor=#C084FC;fontColor=#FAF5FF;" vertex="1" parent="1">
+        <mxCell id="infisical" value="Infisical&#xa;Gemini, PostgreSQL, Redis secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#581C87;strokeColor=#C084FC;fontColor=#FAF5FF;" vertex="1" parent="1">
           <mxGeometry x="1240" y="640" width="260" height="65" as="geometry"/>
         </mxCell>
 
@@ -82,7 +82,7 @@
         <mxCell id="e10" value="7. prompt + text" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#86EFAC;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="async-service" target="gemini-service"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e11" value="generateContent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C084FC;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="gemini-service" target="gemini"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e12" value="8. save deck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#86EFAC;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="async-service" target="firebase-service"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e13" value="Firestore write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C084FC;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="firebase-service" target="firestore"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" value="JSONB write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C084FC;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="firebase-service" target="firestore"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e14" value="status updates" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#34D399;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="async-service" target="job-states"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e15" value="persist lifecycle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#C084FC;fontColor=#CBD5E1;endArrow=block;" edge="1" parent="1" source="job-states" target="redis"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e16" value="future polling" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#64748B;fontColor=#94A3B8;endArrow=block;" edge="1" parent="1" source="future-ui" target="controller"><mxGeometry relative="1" as="geometry"/></mxCell>

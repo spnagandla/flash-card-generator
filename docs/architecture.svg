@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
   <title id="title">AI Flashcard Generator system architecture</title>
-  <desc id="desc">React uploads a document to Spring Boot. Spring creates a Redis job, parses the document asynchronously, calls Gemini, persists the deck in Firestore, and exposes status and result APIs.</desc>
+  <desc id="desc">React uploads a document to Spring Boot. Spring creates a Redis job, parses the document asynchronously, calls Gemini, validates the result, persists the deck in PostgreSQL, and exposes status and result APIs.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#081126"/>
@@ -83,7 +83,7 @@
     <text class="node-copy" x="810" y="542" text-anchor="middle" fill="#dcfce7">Extract generated JSON</text>
 
     <rect x="950" y="480" width="165" height="76" rx="14" fill="#166534" stroke="#86efac"/>
-    <text class="node-title" x="1032" y="508" text-anchor="middle" fill="#f0fdf4">FirebaseService</text>
+    <text class="node-title" x="1032" y="508" text-anchor="middle" fill="#f0fdf4">DeckPersistenceService</text>
     <text class="node-copy" x="1032" y="532" text-anchor="middle" fill="#dcfce7">Persist generated deck</text>
 
     <rect x="600" y="640" width="270" height="82" rx="14" fill="#064e3b" stroke="#34d399"/>
@@ -102,12 +102,12 @@
     <text class="node-copy" x="1372" y="408" text-anchor="middle" fill="#f3e8ff">Generates flashcard JSON</text>
 
     <rect x="1240" y="510" width="265" height="100" rx="22" fill="#6b21a8" stroke="#d8b4fe"/>
-    <text class="node-title" x="1372" y="544" text-anchor="middle" fill="#faf5ff">Firebase Firestore</text>
+    <text class="node-title" x="1372" y="544" text-anchor="middle" fill="#faf5ff">PostgreSQL JSONB</text>
     <text class="node-copy" x="1372" y="570" text-anchor="middle" fill="#f3e8ff">Permanent deck storage</text>
 
     <rect x="1240" y="670" width="265" height="68" rx="14" fill="#581c87" stroke="#c084fc"/>
     <text class="node-title" x="1372" y="698" text-anchor="middle" fill="#faf5ff">Infisical</text>
-    <text class="node-copy" x="1372" y="720" text-anchor="middle" fill="#f3e8ff">Gemini, Firebase and Redis secrets</text>
+    <text class="node-copy" x="1372" y="720" text-anchor="middle" fill="#f3e8ff">Gemini, PostgreSQL and Redis secrets</text>
   </g>
 
   <g>
@@ -135,7 +135,7 @@
     <path class="edge" d="M650 410H920V518H950" stroke="#86efac" marker-end="url(#greenArrow)"/>
     <text class="edge-label" x="790" y="436">save deck</text>
     <path class="edge" d="M1115 518H1240" stroke="#c084fc" marker-end="url(#purpleArrow)"/>
-    <text class="edge-label" x="1140" y="505">Firestore write</text>
+    <text class="edge-label" x="1140" y="505">JSONB write</text>
     <path class="edge" d="M537 428V681H600" stroke="#34d399" marker-end="url(#greenArrow)"/>
     <text class="edge-label" x="548" y="574">status updates</text>
     <path class="edge" d="M870 681H1165V245H1240" stroke="#c084fc" marker-end="url(#purpleArrow)"/>

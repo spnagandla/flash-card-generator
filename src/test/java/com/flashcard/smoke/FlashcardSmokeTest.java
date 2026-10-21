@@ -34,10 +34,18 @@ class FlashcardSmokeTest {
         ParserService parserService = new ParserService(List.of(pdfParser, wordParser, pptParser));
         JobService jobService = mock(JobService.class);
         GeminiService geminiService = mock(GeminiService.class);
-        FirebaseService firebaseService = mock(FirebaseService.class);
+        FlashcardValidationService flashcardValidationService = new FlashcardValidationService();
+        DeckPersistenceService deckPersistenceService = mock(DeckPersistenceService.class);
 
-        FlashcardService flashcardService = new FlashcardService(parserService, jobService, geminiService, firebaseService);
         ObjectMapper objectMapper = new ObjectMapper();
+        FlashcardService flashcardService = new FlashcardService(
+                parserService,
+                jobService,
+                geminiService,
+                flashcardValidationService,
+                objectMapper,
+                deckPersistenceService
+        );
         FlashcardController controller = new FlashcardController(jobService, flashcardService, objectMapper);
 
         assertThat(controller).isNotNull();

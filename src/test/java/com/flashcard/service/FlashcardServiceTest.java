@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -24,7 +27,13 @@ class FlashcardServiceTest {
     private GeminiService geminiService;
 
     @Mock
-    private FirebaseService firebaseService;
+    private FlashcardValidationService flashcardValidationService;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Mock
+    private DeckPersistenceService deckPersistenceService;
 
     @InjectMocks
     private FlashcardService flashcardService;
@@ -38,7 +47,7 @@ class FlashcardServiceTest {
 
         verify(jobService, times(1)).getJob("job-none");
         verify(jobService, never()).updateJob(any());
-        verifyNoInteractions(parserService, geminiService, firebaseService);
+        verifyNoInteractions(parserService, geminiService, flashcardValidationService, deckPersistenceService);
     }
 
     @Test
@@ -59,12 +68,13 @@ class FlashcardServiceTest {
 
         assertThat(job.getStatus()).isEqualTo("COMPLETED");
         assertThat(job.getExtractedText()).isEqualTo("Extracted document text");
-        assertThat(job.getFlashcardsJson()).isEqualTo("[{\"question\":\"Q?\"}]");
+        assertThat(job.getFlashcardsJson()).contains("\"question\":\"Q?\"");
         assertThat(job.getError()).isNull();
 
         verify(parserService, times(1)).parseDocument("test.pdf", content);
         verify(geminiService, times(1)).generateFlashcards("Extracted document text");
-        verify(firebaseService, times(1)).saveDeck("job-100", "test.pdf", "[{\"question\":\"Q?\"}]");
+        verify(flashcardValidationService, times(1)).validate(anyList());
+        verify(deckPersistenceService, times(1)).saveDeck(eq("job-100"), eq("test.pdf"), anyList());
         // updateJob is called twice: once for PROCESSING, once for COMPLETED
         verify(jobService, times(2)).updateJob(job);
     }
@@ -88,7 +98,7 @@ class FlashcardServiceTest {
         assertThat(job.getStatus()).isEqualTo("FAILED");
         assertThat(job.getError()).isEqualTo("Unsupported file format: pdf");
         verify(geminiService, never()).generateFlashcards(any());
-        verify(firebaseService, never()).saveDeck(any(), any(), any());
+        verify(deckPersistenceService, never()).saveDeck(any(), any(), anyList());
         verify(jobService, times(2)).updateJob(job);
     }
 
@@ -111,7 +121,7 @@ class FlashcardServiceTest {
 
         assertThat(job.getStatus()).isEqualTo("FAILED");
         assertThat(job.getError()).isEqualTo("Gemini quota exceeded");
-        verify(firebaseService, never()).saveDeck(any(), any(), any());
+        verify(deckPersistenceService, never()).saveDeck(any(), any(), anyList());
         verify(jobService, times(2)).updateJob(job);
     }
 }

@@ -2,13 +2,13 @@
 
 An asynchronous full-stack application that converts PDF, Word, and PowerPoint study material into AI-generated multiple-choice flashcards.
 
-The React frontend accepts a document and sends it to a Spring Boot API. The backend creates a Redis-backed job, extracts text with a format-specific parser, asks Google Gemini to generate structured flashcards, stores the generated deck in Firebase Firestore, and exposes endpoints for checking job status and retrieving results.
+The React frontend accepts a document and sends it to a Spring Boot API. The backend creates a Redis-backed job, extracts text with a format-specific parser, asks Google Gemini to generate structured flashcards, validates the model output, stores the generated deck in PostgreSQL, and exposes endpoints for checking job status and retrieving results.
 
 > Current status: document upload and job creation are connected end to end. The frontend stores the returned job ID; status polling and flashcard deck rendering are planned next.
 
 ## Architecture
 
-![AI Flashcard Generator architecture](docs/architecture.png)
+![AI Flashcard Generator architecture](docs/architecture.svg)
 
 The editable diagrams.net source is available at [docs/architecture.drawio](docs/architecture.drawio). Open it in [draw.io](https://app.diagrams.net/) to modify the architecture. A scalable rendered version is also available at [docs/architecture.svg](docs/architecture.svg).
 
@@ -23,9 +23,10 @@ The editable diagrams.net source is available at [docs/architecture.drawio](docs
 7. `ParserService` selects the matching document parser.
 8. PDFBox or Apache POI extracts the document text.
 9. `GeminiService` sends the extracted text and flashcard prompt to Google Gemini.
-10. The generated JSON is attached to the Redis job and saved to Firestore.
-11. The job becomes `COMPLETED`, or `FAILED` if processing throws an exception.
-12. API clients can check status and retrieve the completed flashcard deck.
+10. Jackson parses the generated JSON into typed flashcards and application guardrails validate them.
+11. The validated deck is attached to the Redis job and saved to PostgreSQL as JSONB.
+12. The job becomes `COMPLETED`, or `FAILED` if processing throws an exception.
+13. API clients can check status and retrieve the completed flashcard deck.
 
 ## Tech Stack
 
@@ -47,6 +48,8 @@ The editable diagrams.net source is available at [docs/architecture.drawio](docs
 | Spring Web / `RestClient` | HTTP endpoints and Gemini API calls |
 | Spring `@Async` | Background flashcard-generation jobs |
 | Spring Data Redis | Temporary job state and processing results |
+| Spring Data JPA | PostgreSQL entity and repository persistence |
+| Flyway | Versioned database schema migrations |
 | Jackson | JSON parsing and response mapping |
 | Lombok | Reduced Java model and service boilerplate |
 
@@ -63,8 +66,8 @@ The editable diagrams.net source is available at [docs/architecture.drawio](docs
 | Technology | Purpose |
 |---|---|
 | Redis | Stores `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` jobs |
-| Firebase Firestore | Permanent flashcard deck storage when configured |
-| Infisical | Loads Gemini, Firebase, and Redis secrets at application startup |
+| PostgreSQL / Neon | Permanently stores validated decks as JSONB |
+| Infisical | Loads Gemini, PostgreSQL, and Redis secrets at application startup |
 
 ## Current Features
 
@@ -77,8 +80,8 @@ The editable diagrams.net source is available at [docs/architecture.drawio](docs
 - Asynchronous backend processing
 - Redis job lifecycle tracking
 - PDF, Word, and PowerPoint text extraction
-- Gemini-generated flashcard JSON
-- Optional Firestore persistence
+- Typed parsing and validation of Gemini-generated flashcards
+- PostgreSQL JSONB deck persistence
 - Status and result REST endpoints
 
 ## API
@@ -177,8 +180,8 @@ Example completed response:
 - Maven 3.9+
 - Node.js and npm
 - Redis running at `redis://localhost:6379`, or a configured `REDIS_URL`
+- PostgreSQL running locally, through Docker Compose, or hosted by Neon
 - A Gemini API key
-- Optional Firebase service-account JSON
 - Optional Infisical project credentials
 
 ### Environment Variables
@@ -195,8 +198,10 @@ Infisical maps application secrets including:
 
 ```text
 GEMINI_API_KEY
-FIRE_BASE_SERVICE_ACCOUNT_JSON
 REDIS_URL
+DATABASE_URL
+DATABASE_USERNAME
+DATABASE_PASSWORD
 ```
 
 For local development without Infisical, provide Spring-compatible environment properties directly. At minimum, configure the Gemini API key and Redis connection.
@@ -290,9 +295,8 @@ flash-card-generator/
 ## Current Limitations
 
 - The frontend does not yet poll job status or display the generated deck.
-- Gemini output is still handled as raw JSON text before later conversion.
-- Full structured output validation and AI guardrails are planned.
-- Firestore save failures are currently logged inside `FirebaseService`; failure propagation needs hardening.
+- Output guardrails still need allowed-value, confidence-range, and duplicate-card validation.
+- PostgreSQL integration still needs verification against a real Neon database.
 - The UI mentions a 25 MB limit while Spring Boot currently enforces 20 MB.
 - Server-side MIME/content validation is not implemented yet.
 - DOCX and PPTX are the parser implementations currently verified by the selected Apache POI APIs; legacy DOC/PPT support needs explicit testing.

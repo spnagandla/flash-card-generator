@@ -56,13 +56,24 @@ public class InfisicalPropertySource implements ApplicationContextInitializer<Co
                     secretMap.put("spring.ai.model.chat", "google-genai");
                 }
 
-                if (key.equals("FIRE_BASE_SERVICE_ACCOUNT_JSON")) {
-                    secretMap.put("FIRE_BASE_SERVICE_ACCOUNT_JSON", value);
-                }
-
                 if (key.equals("REDIS_URL")) {
                     secretMap.put("REDIS_URL", value);
                     secretMap.put("spring.data.redis.url", value);
+                }
+
+                if (key.equals("NEON_DATABASE_URL")) {
+                    secretMap.put("NEON_DATABASE_URL", value);
+                    secretMap.put("spring.datasource.url", value);
+                }
+
+                if (key.equals("NEON_DATABASE_USERNAME")) {
+                    secretMap.put("NEON_DATABASE_USERNAME", value);
+                    secretMap.put("spring.datasource.username", value);
+                }
+
+                if (key.equals("NEON_DATABASE_PASSWORD")) {
+                    secretMap.put("NEON_DATABASE_PASSWORD", value);
+                    secretMap.put("spring.datasource.password", value);
                 }
             }
 
@@ -70,7 +81,6 @@ public class InfisicalPropertySource implements ApplicationContextInitializer<Co
                     .getPropertySources()
                     .addFirst(new MapPropertySource("infisical", secretMap));
 
-//            log.info("Loaded {} app secrets from Infisical.", secretMap.values());
             log.info("Loaded {} app secrets from Infisical.", secretMap.size());
         } catch (InfisicalException e) {
             throw new RuntimeException("Infisical auth/fetch failed: " + e.getMessage(), e);
