@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -19,5 +20,9 @@ public class DeckPersistenceService {
     public void saveDeck(String jobId, String fileName, List<Flashcard> flashcards) {
         log.info("Saving completed flashcard deck to PostgreSQL for job: {}", jobId);
         flashcardDeckRepository.save(new FlashcardDeck(jobId, fileName, flashcards));
+    }
+
+    public Optional<FlashcardDeck> findDeck(String jobId) {
+        return flashcardDeckRepository.findById(jobId);
     }
 }

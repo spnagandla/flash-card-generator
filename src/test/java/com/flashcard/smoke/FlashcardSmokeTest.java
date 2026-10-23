@@ -46,7 +46,7 @@ class FlashcardSmokeTest {
                 objectMapper,
                 deckPersistenceService
         );
-        FlashcardController controller = new FlashcardController(jobService, flashcardService, objectMapper);
+        FlashcardController controller = new FlashcardController(jobService, flashcardService, deckPersistenceService);
 
         assertThat(controller).isNotNull();
         assertThat(flashcardService).isNotNull();
@@ -73,8 +73,8 @@ class FlashcardSmokeTest {
     void testEndpointResponsiveness() throws Exception {
         JobService jobService = mock(JobService.class);
         FlashcardService flashcardService = mock(FlashcardService.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        FlashcardController controller = new FlashcardController(jobService, flashcardService, objectMapper);
+        DeckPersistenceService deckPersistenceService = mock(DeckPersistenceService.class);
+        FlashcardController controller = new FlashcardController(jobService, flashcardService, deckPersistenceService);
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
@@ -115,7 +115,7 @@ class FlashcardSmokeTest {
                 .id("smoke-job-1")
                 .status("COMPLETED")
                 .fileName("smoke.pdf")
-                .flashcardsJson(json)
+                .progress(100)
                 .build();
 
         String jobJson = objectMapper.writeValueAsString(job);

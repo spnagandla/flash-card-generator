@@ -67,8 +67,7 @@ class FlashcardServiceTest {
         flashcardService.processFlashcards("job-100", content);
 
         assertThat(job.getStatus()).isEqualTo("COMPLETED");
-        assertThat(job.getExtractedText()).isEqualTo("Extracted document text");
-        assertThat(job.getFlashcardsJson()).contains("\"question\":\"Q?\"");
+        assertThat(job.getProgress()).isEqualTo(100);
         assertThat(job.getError()).isNull();
 
         verify(parserService, times(1)).parseDocument("test.pdf", content);

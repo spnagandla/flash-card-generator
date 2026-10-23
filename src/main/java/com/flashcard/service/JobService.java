@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.UUID;
 
 /**
@@ -18,6 +19,7 @@ public class JobService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String KEY_PREFIX = "job:";
+    private static final Duration JOB_TTL = Duration.ofHours(24);
 
     /**
      * Creates a new job record in Redis with a PENDING status.
@@ -29,10 +31,11 @@ public class JobService {
                 .id(jobId)
                 .fileName(fileName)
                 .status("PENDING")
+                .progress(0)
                 .build();
 
         log.info("Creating new job in Redis: {} for file: {}", jobId, fileName);
-        redisTemplate.opsForValue().set(KEY_PREFIX + jobId, job);
+        saveWithTtl(job);
         
         return jobId;
     }
@@ -42,7 +45,7 @@ public class JobService {
      */
     public void updateJob(FlashcardJob job) {
         log.debug("Updating job status in Redis: {} to {}", job.getId(), job.getStatus());
-        redisTemplate.opsForValue().set(KEY_PREFIX + job.getId(), job);
+        saveWithTtl(job);
     }
 
     /**
@@ -61,5 +64,9 @@ public class JobService {
         }
         
         return (FlashcardJob) job;
+    }
+
+    private void saveWithTtl(FlashcardJob job) {
+        redisTemplate.opsForValue().set(KEY_PREFIX + job.getId(), job, JOB_TTL);
     }
 }

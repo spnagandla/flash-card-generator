@@ -94,8 +94,8 @@
   <g>
     <rect x="1240" y="160" width="265" height="105" rx="22" fill="#581c87" stroke="#c084fc"/>
     <text class="node-title" x="1372" y="191" text-anchor="middle" fill="#faf5ff">Redis</text>
-    <text class="node-copy" x="1372" y="215" text-anchor="middle" fill="#f3e8ff">Job state, extracted text,</text>
-    <text class="node-copy" x="1372" y="236" text-anchor="middle" fill="#f3e8ff">generated JSON and errors</text>
+    <text class="node-copy" x="1372" y="215" text-anchor="middle" fill="#f3e8ff">Expiring job status, progress,</text>
+    <text class="node-copy" x="1372" y="236" text-anchor="middle" fill="#f3e8ff">file name and errors</text>
 
     <rect x="1240" y="350" width="265" height="85" rx="16" fill="#6b21a8" stroke="#d8b4fe"/>
     <text class="node-title" x="1372" y="382" text-anchor="middle" fill="#faf5ff">Google Gemini API</text>

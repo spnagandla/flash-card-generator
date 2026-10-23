@@ -57,7 +57,7 @@
           <mxGeometry x="610" y="600" width="250" height="80" as="geometry"/>
         </mxCell>
 
-        <mxCell id="redis" value="Redis&#xa;Transient job state, extracted text, generated JSON, errors" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#581C87;strokeColor=#C084FC;fontColor=#FAF5FF;" vertex="1" parent="1">
+        <mxCell id="redis" value="Redis&#xa;Expiring job status, progress, and errors" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#581C87;strokeColor=#C084FC;fontColor=#FAF5FF;" vertex="1" parent="1">
           <mxGeometry x="1240" y="160" width="260" height="105" as="geometry"/>
         </mxCell>
         <mxCell id="gemini" value="Google Gemini API&#xa;Generates flashcard JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6B21A8;strokeColor=#D8B4FE;fontColor=#FAF5FF;fontStyle=1;" vertex="1" parent="1">

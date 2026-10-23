@@ -66,10 +66,10 @@ Relevant files:
 The application now proves that Gemini returns a JSON array that maps to `Flashcard` objects and checks required text, collection sizes, and blank collection values. Remaining guardrails include:
 
 - allowed difficulty values,
-- allowed cognitive-level values,
-- confidence between `0.0` and `1.0`,
 - duplicate questions and answers,
 - evidence support against the source document.
+
+Allowed cognitive levels and the inclusive `0.0` to `1.0` confidence range are now validated and covered by focused unit tests.
 
 ## First Implementation Lesson After Foundations
 
@@ -107,13 +107,35 @@ The complete production sequence is maintained in:
 After structured validation is stable:
 
 1. Verify the persistence flow against the Neon database.
-2. Add document chunking for long inputs.
-3. Generate cards per chunk.
-4. Merge results and remove duplicates.
-5. Add generation quality evaluation.
-6. Add embeddings and vector search with PostgreSQL and pgvector.
-7. Build grounded RAG and an Ask My Document feature.
-8. Add source citations and user feedback.
+2. Refactor Redis to keep only temporary job status and progress, with a TTL.
+3. Learn tokens, context windows, and token budgeting before RAG.
+4. Add slide-based or token-budget chunking for long inputs.
+5. Generate cards per chunk, merge results, and remove duplicates.
+6. Move uploaded files to object storage instead of passing a complete `byte[]` to background work.
+7. Add generation quality evaluation.
+8. Add embeddings and vector search with PostgreSQL and pgvector later.
+9. Build grounded RAG and an Ask My Document feature only after those foundations.
+10. Add source citations and user feedback.
+
+## Redis And Large-Document Plan
+
+Redis is not the storage solution for a large PPT. It coordinates temporary work:
+
+```text
+upload -> object storage -> background worker -> parse by slide
+       -> token-sized chunks -> Gemini batches -> PostgreSQL deck
+
+Redis: job status and progress only
+```
+
+Near-term changes:
+
+- `extractedText` and `flashcardsJson` have been removed from `FlashcardJob`,
+- Redis now retains only job ID, status, progress, file name, and error metadata,
+- job entries now expire 24 hours after their latest update,
+- completed result retrieval now reads PostgreSQL rather than Redis,
+- teach and implement chunking without introducing RAG,
+- keep local Redis in Docker and use `REDIS_URL` for a managed production instance.
 
 ## Deferred Reliability Work
 

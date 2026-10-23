@@ -19,16 +19,14 @@ class FlashcardJobTest {
                 .id("job-abc")
                 .status("PROCESSING")
                 .fileName("deck.pdf")
-                .flashcardsJson("[{\"question\":\"Q1\"}]")
-                .extractedText("Sample document text")
+                .progress(40)
                 .error(null)
                 .build();
 
         assertThat(job.getId()).isEqualTo("job-abc");
         assertThat(job.getStatus()).isEqualTo("PROCESSING");
         assertThat(job.getFileName()).isEqualTo("deck.pdf");
-        assertThat(job.getFlashcardsJson()).isEqualTo("[{\"question\":\"Q1\"}]");
-        assertThat(job.getExtractedText()).isEqualTo("Sample document text");
+        assertThat(job.getProgress()).isEqualTo(40);
         assertThat(job.getError()).isNull();
 
         job.setStatus("FAILED");
@@ -44,8 +42,7 @@ class FlashcardJobTest {
                 .id("job-serial")
                 .status("COMPLETED")
                 .fileName("lecture.docx")
-                .flashcardsJson("[]")
-                .extractedText("Text")
+                .progress(100)
                 .build();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

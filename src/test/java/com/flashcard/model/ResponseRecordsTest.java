@@ -19,11 +19,12 @@ class ResponseRecordsTest {
     @Test
     @DisplayName("JobStatusResponse record should store and expose all status attributes")
     void testJobStatusResponse() {
-        JobStatusResponse response = new JobStatusResponse("job-888", "PROCESSING", "notes.pdf", null);
+        JobStatusResponse response = new JobStatusResponse("job-888", "PROCESSING", "notes.pdf", 40, null);
 
         assertThat(response.jobId()).isEqualTo("job-888");
         assertThat(response.status()).isEqualTo("PROCESSING");
         assertThat(response.fileName()).isEqualTo("notes.pdf");
+        assertThat(response.progress()).isEqualTo(40);
         assertThat(response.error()).isNull();
     }
 

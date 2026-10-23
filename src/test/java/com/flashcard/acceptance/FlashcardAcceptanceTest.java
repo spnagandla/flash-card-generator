@@ -3,6 +3,7 @@ package com.flashcard.acceptance;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flashcard.controller.FlashcardController;
 import com.flashcard.model.Flashcard;
+import com.flashcard.model.FlashcardDeck;
 import com.flashcard.model.FlashcardJob;
 import com.flashcard.model.FlashcardResultResponse;
 import com.flashcard.model.JobStatusResponse;
@@ -39,8 +40,10 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +78,7 @@ class FlashcardAcceptanceTest {
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Object> redisStore = new ConcurrentHashMap<>();
+    private final Map<String, FlashcardDeck> deckStore = new ConcurrentHashMap<>();
 
     private FlashcardService flashcardService;
     private JobService jobService;
@@ -89,12 +93,24 @@ class FlashcardAcceptanceTest {
             Object value = invocation.getArgument(1);
             redisStore.put(key, value);
             return null;
-        }).when(valueOperations).set(anyString(), any());
+        }).when(valueOperations).set(anyString(), any(), any(Duration.class));
 
         doAnswer(invocation -> {
             String key = invocation.getArgument(0);
             return redisStore.get(key);
         }).when(valueOperations).get(anyString());
+
+        doAnswer(invocation -> {
+            String jobId = invocation.getArgument(0);
+            String fileName = invocation.getArgument(1);
+            List<Flashcard> flashcards = invocation.getArgument(2);
+            deckStore.put(jobId, new FlashcardDeck(jobId, fileName, flashcards));
+            return null;
+        }).when(deckPersistenceService).saveDeck(anyString(), anyString(), anyList());
+
+        when(deckPersistenceService.findDeck(anyString())).thenAnswer(invocation ->
+                Optional.ofNullable(deckStore.get(invocation.getArgument(0)))
+        );
 
         jobService = new JobService(redisTemplate);
 
@@ -112,7 +128,11 @@ class FlashcardAcceptanceTest {
                 objectMapper,
                 deckPersistenceService
         );
-        FlashcardController controller = new FlashcardController(jobService, flashcardService, objectMapper);
+        FlashcardController controller = new FlashcardController(
+                jobService,
+                flashcardService,
+                deckPersistenceService
+        );
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }

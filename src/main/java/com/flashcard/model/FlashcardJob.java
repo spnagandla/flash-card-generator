@@ -18,8 +18,7 @@ public class FlashcardJob implements Serializable {
    private String id;
    private String status;
    private String fileName;
-   private String flashcardsJson;
-   private String extractedText;
+   private Integer progress;
    private String error;
 
 }

@@ -12,8 +12,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,5 +53,17 @@ class DeckPersistenceServiceTest {
         assertThat(savedDeck.getFileName()).isEqualTo("notes.pdf");
         assertThat(savedDeck.getFlashcards()).containsExactly(card);
         assertThat(savedDeck.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("findDeck should retrieve a completed deck by job ID")
+    void findDeck_ExistingJob_ReturnsDeck() {
+        FlashcardDeck deck = new FlashcardDeck("job-2", "slides.pptx", List.of(new Flashcard()));
+        when(flashcardDeckRepository.findById("job-2")).thenReturn(Optional.of(deck));
+
+        Optional<FlashcardDeck> result = deckPersistenceService.findDeck("job-2");
+
+        assertThat(result).contains(deck);
+        verify(flashcardDeckRepository).findById("job-2");
     }
 }

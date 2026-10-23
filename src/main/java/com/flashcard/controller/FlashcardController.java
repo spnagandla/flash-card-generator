@@ -1,12 +1,11 @@
 package com.flashcard.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flashcard.model.Flashcard;
+import com.flashcard.model.FlashcardDeck;
 import com.flashcard.model.FlashcardResultResponse;
 import com.flashcard.model.FlashcardJob;
 import com.flashcard.model.JobStatusResponse;
 import com.flashcard.model.UploadResponse;
+import com.flashcard.service.DeckPersistenceService;
 import com.flashcard.service.FlashcardService;
 import com.flashcard.service.JobService;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 /**
  * REST Controller for flashcard operations.
@@ -31,7 +28,7 @@ public class FlashcardController {
     // These must be 'final' for @RequiredArgsConstructor to inject them!
     private final JobService jobService;
     private final FlashcardService flashcardService;
-    private final ObjectMapper objectMapper;
+    private final DeckPersistenceService deckPersistenceService;
 
     /**
      * Endpoint to upload a document and start the background processing.
@@ -69,6 +66,7 @@ public class FlashcardController {
                 job.getId(),
                 job.getStatus(),
                 job.getFileName(),
+                job.getProgress(),
                 job.getError()
         ));
     }
@@ -76,6 +74,15 @@ public class FlashcardController {
     @GetMapping("/result/{jobId}")
     public ResponseEntity<FlashcardResultResponse> getResult(@PathVariable String jobId) throws Exception {
         log.debug("Getting result for job: {}", jobId);
+
+        FlashcardDeck deck = deckPersistenceService.findDeck(jobId).orElse(null);
+        if (deck != null) {
+            return ResponseEntity.ok(new FlashcardResultResponse(
+                    deck.getJobId(),
+                    deck.getFileName(),
+                    deck.getFlashcards()
+            ));
+        }
 
         FlashcardJob job = jobService.getJob(jobId);
         if (job == null) {
@@ -86,16 +93,6 @@ public class FlashcardController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
-        List<Flashcard> flashcards = objectMapper.readValue(
-                job.getFlashcardsJson(),
-                new TypeReference<>() {
-                }
-        );
-
-        return ResponseEntity.ok(new FlashcardResultResponse(
-                job.getId(),
-                job.getFileName(),
-                flashcards
-        ));
+        return ResponseEntity.notFound().build();
     }
 }

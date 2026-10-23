@@ -24,9 +24,9 @@ The editable diagrams.net source is available at [docs/architecture.drawio](docs
 8. PDFBox or Apache POI extracts the document text.
 9. `GeminiService` sends the extracted text and flashcard prompt to Google Gemini.
 10. Jackson parses the generated JSON into typed flashcards and application guardrails validate them.
-11. The validated deck is attached to the Redis job and saved to PostgreSQL as JSONB.
+11. The validated deck is saved to PostgreSQL as JSONB; Redis retains only temporary job metadata.
 12. The job becomes `COMPLETED`, or `FAILED` if processing throws an exception.
-13. API clients can check status and retrieve the completed flashcard deck.
+13. API clients check status through Redis and retrieve the completed deck from PostgreSQL.
 
 ## Tech Stack
 
@@ -295,7 +295,7 @@ flash-card-generator/
 ## Current Limitations
 
 - The frontend does not yet poll job status or display the generated deck.
-- Output guardrails still need allowed-value, confidence-range, and duplicate-card validation.
+- Output guardrails still need allowed difficulty values and duplicate-card validation.
 - PostgreSQL integration still needs verification against a real Neon database.
 - The UI mentions a 25 MB limit while Spring Boot currently enforces 20 MB.
 - Server-side MIME/content validation is not implemented yet.
@@ -318,6 +318,7 @@ flash-card-generator/
 - Add prompt versioning and token budgets
 - Build evaluation datasets and regression tests
 - Add document chunking
+- Move uploaded files to object storage and keep Redis limited to expiring job metadata
 - Add embeddings, vector search, and production RAG
 - Add grounded Ask My Document functionality
 - Add tool calling, agents, skills, and MCP after deterministic foundations

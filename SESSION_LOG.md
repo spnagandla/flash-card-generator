@@ -74,3 +74,36 @@ This file records where work stopped so future sessions can resume quickly.
 4. Confirm Flyway applies `V1__create_flashcard_decks.sql`, Hibernate validation passes, and Tomcat starts on port 8080.
 5. After database startup works, finish the remaining AI-output guardrails: allowed difficulty, cognitive level, confidence range, and duplicate detection.
 
+### Planned Work After Database Startup
+
+The next topic is large-document processing and Redis architecture. RAG is intentionally deferred.
+
+Target responsibilities:
+
+- Redis stores only temporary job state: job ID, status, progress, file name, and a short error message.
+- Redis must not permanently store the uploaded file, full extracted text, or completed flashcard JSON.
+- PostgreSQL stores completed flashcard decks and other durable application records.
+- Object storage will eventually hold uploaded PPT/PDF/DOCX files.
+- Large presentations will be parsed and divided by slide or token budget, then sent to Gemini in batches. This is basic chunking, not RAG.
+
+Current Redis weaknesses:
+
+- `FlashcardJob` no longer contains `extractedText` or `flashcardsJson`.
+- Redis job entries now expire 24 hours after their latest update.
+- The result endpoint now retrieves completed decks from PostgreSQL by job ID, so durable results do not depend on Redis.
+- `processFlashcards` receives the entire upload as a `byte[]`, so large files remain in JVM memory during processing.
+- `@Async` runs work in another application thread but is not a durable job queue; an application restart can lose in-progress work.
+
+Implementation order:
+
+1. Verify Flyway creates `flashcard_decks` and the application starts successfully.
+2. Finish deterministic guardrails: allowed difficulty and duplicate questions/answers. Cognitive-level and confidence validation are now implemented and tested.
+3. ~~Refactor Redis jobs to contain status/progress metadata only.~~ Completed 2026-10-22.
+4. ~~Add a Redis TTL, initially about 24 hours.~~ Completed 2026-10-22.
+5. Learn tokens, model context windows, and token budgeting.
+6. Implement slide-based or token-budget chunking and process chunks in batches.
+7. Add object storage so background processing receives a storage key instead of the complete `byte[]`.
+8. Later, replace or augment `@Async` with a durable queue/worker design if production reliability requires it.
+
+Local Redis is already defined in `docker-compose.yml` and can be started with `docker compose up -d redis`. Production should use a managed Redis service configured through the `REDIS_URL` Infisical secret.
+

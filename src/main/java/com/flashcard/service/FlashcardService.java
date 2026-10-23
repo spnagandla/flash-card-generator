@@ -45,12 +45,12 @@ public class FlashcardService {
         try {
             // 2. Update status to PROCESSING
             job.setStatus("PROCESSING");
+            job.setProgress(1);
             jobService.updateJob(job);
             
             // 3. Extract text from the document
             log.info("Parsing document for job: {}", jobId);
             String text = parserService.parseDocument(job.getFileName(), fileContent);
-            job.setExtractedText(text);
             
             // 4. Update progress
             log.info("Extraction complete for job: {}. Length: {} chars.", jobId, text.length());
@@ -65,14 +65,12 @@ public class FlashcardService {
             );
             flashcardValidationService.validate(flashCards);
 
-            String validatedFlashcardsJson = objectMapper.writeValueAsString(flashCards);
-            job.setFlashcardsJson(validatedFlashcardsJson);
-
             log.info("Saving validated cards to PostgreSQL for job: {}", jobId);
             deckPersistenceService.saveDeck(jobId, job.getFileName(), flashCards);
             
             // 5. Mark as COMPLETED (for now)
             job.setStatus("COMPLETED");
+            job.setProgress(2);
             jobService.updateJob(job);
             
         } catch (Exception e) {

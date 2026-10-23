@@ -11,6 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -41,12 +43,17 @@ class JobServiceTest {
 
         assertThat(jobId).isNotBlank();
         ArgumentCaptor<FlashcardJob> jobCaptor = ArgumentCaptor.forClass(FlashcardJob.class);
-        verify(valueOperations, times(1)).set(eq("job:" + jobId), jobCaptor.capture());
+        verify(valueOperations, times(1)).set(
+                eq("job:" + jobId),
+                jobCaptor.capture(),
+                eq(Duration.ofHours(24))
+        );
 
         FlashcardJob capturedJob = jobCaptor.getValue();
         assertThat(capturedJob.getId()).isEqualTo(jobId);
         assertThat(capturedJob.getFileName()).isEqualTo(fileName);
         assertThat(capturedJob.getStatus()).isEqualTo("PENDING");
+        assertThat(capturedJob.getProgress()).isZero();
     }
 
     @Test
@@ -60,7 +67,7 @@ class JobServiceTest {
 
         jobService.updateJob(job);
 
-        verify(valueOperations, times(1)).set("job:job-456", job);
+        verify(valueOperations, times(1)).set("job:job-456", job, Duration.ofHours(24));
     }
 
     @Test
