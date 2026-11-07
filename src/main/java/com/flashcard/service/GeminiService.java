@@ -1,11 +1,15 @@
 package com.flashcard.service;
 
+import com.flashcard.model.Flashcard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -17,7 +21,7 @@ public class GeminiService {
     @Value("${gemini.api.key:}")
     private String apiKey;
 
-    public String generateFlashcards(String text) throws Exception {
+    public List<Flashcard> generateFlashcards(String text) throws Exception {
         log.info("Requesting Expert Tutor flashcards from Gemini...");
 
         if (apiKey == null || apiKey.isBlank()) {
@@ -65,20 +69,21 @@ public class GeminiService {
                 throw new IllegalStateException("Spring AI ChatClient is not configured. Check Spring AI model settings.");
             }
 
-            String response = chatClientBuilder
+            List<Flashcard> flashcards = chatClientBuilder
                     .build()
                     .prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
                     .call()
-                    .content();
+                    .entity(new ParameterizedTypeReference<>() {
+                    });
 
-            if (response == null || response.isBlank()) {
-                throw new IllegalStateException("Gemini response did not contain generated text.");
+            if (flashcards == null || flashcards.isEmpty()) {
+                throw new IllegalStateException("Gemini response did not contain generated flashcards.");
             }
 
             log.info("Successfully received flashcards from Gemini.");
-            return response.replace("```json", "").replace("```", "").trim();
+            return flashcards;
         } catch (Exception e) {
             log.error("Gemini API call failed", e);
             throw e;

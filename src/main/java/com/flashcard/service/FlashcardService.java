@@ -1,7 +1,5 @@
 package com.flashcard.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flashcard.model.Flashcard;
 import com.flashcard.model.FlashcardJob;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +19,10 @@ import java.util.List;
 public class FlashcardService {
 
     private final ParserService parserService;
+    private final TextCleaningService textCleaningService;
     private final JobService jobService;
     private final GeminiService geminiService;
     private final FlashcardValidationService flashcardValidationService;
-    private final ObjectMapper objectMapper;
     private final DeckPersistenceService deckPersistenceService;
 
     /**
@@ -50,19 +48,15 @@ public class FlashcardService {
             
             // 3. Extract text from the document
             log.info("Parsing document for job: {}", jobId);
-            String text = parserService.parseDocument(job.getFileName(), fileContent);
+            String text = textCleaningService.clean(
+                    parserService.parseDocument(job.getFileName(), fileContent));
             
             // 4. Update progress
             log.info("Extraction complete for job: {}. Length: {} chars.", jobId, text.length());
 
 
             log.info("Sending extracted text to Gemini for job: {}", jobId);
-            String flashcardsJson = geminiService.generateFlashcards(text);
-            List<Flashcard> flashCards = objectMapper.readValue(
-                    flashcardsJson,
-                    new TypeReference<>() {
-                    }
-            );
+            List<Flashcard> flashCards = geminiService.generateFlashcards(text);
             flashcardValidationService.validate(flashCards);
 
             log.info("Saving validated cards to PostgreSQL for job: {}", jobId);
