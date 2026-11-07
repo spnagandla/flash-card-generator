@@ -4,10 +4,19 @@ import com.flashcard.model.Flashcard;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
 public class FlashcardValidationService {
+
+    private static final int MAX_FLASHCARDS = 40;
+
+    private static final Set<String> ALLOWED_DIFFICULTIES = Set.of(
+            "easy",
+            "medium",
+            "hard"
+    );
 
     private static final Set<String> ALLOWED_COGNITIVE_LEVELS = Set.of(
             "remember",
@@ -19,6 +28,12 @@ public class FlashcardValidationService {
     public void validate(List<Flashcard> flashcards) {
         if(flashcards == null || flashcards.isEmpty()) {
             throw new IllegalArgumentException("Gemini returned no flashcards.");
+        }
+
+        if (flashcards.size() > MAX_FLASHCARDS) {
+            throw new IllegalArgumentException(
+                    "Gemini returned too many flashcards (maximum " + MAX_FLASHCARDS + ")."
+            );
         }
 
         for(Flashcard flashcard : flashcards) {
@@ -38,6 +53,14 @@ public class FlashcardValidationService {
             if (isBlank(flashcard.getDifficulty())) {
                 throw new IllegalArgumentException("Flashcard difficulty is required.");
             }
+
+            String difficulty = flashcard.getDifficulty().strip().toLowerCase(Locale.ROOT);
+            if (!ALLOWED_DIFFICULTIES.contains(difficulty)) {
+                throw new IllegalArgumentException(
+                        "Flashcard difficulty must be one of: easy, medium, hard."
+                );
+            }
+            flashcard.setDifficulty(difficulty);
 
             if (isBlank(flashcard.getCognitiveLevel())) {
                 throw new IllegalArgumentException("Flashcard cognitive level is required.");

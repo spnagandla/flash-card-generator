@@ -37,13 +37,12 @@ class FlashcardSmokeTest {
         FlashcardValidationService flashcardValidationService = new FlashcardValidationService();
         DeckPersistenceService deckPersistenceService = mock(DeckPersistenceService.class);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         FlashcardService flashcardService = new FlashcardService(
                 parserService,
+                new TextCleaningService(),
                 jobService,
                 geminiService,
                 flashcardValidationService,
-                objectMapper,
                 deckPersistenceService
         );
         FlashcardController controller = new FlashcardController(jobService, flashcardService, deckPersistenceService);

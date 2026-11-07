@@ -107,3 +107,86 @@ Implementation order:
 
 Local Redis is already defined in `docker-compose.yml` and can be started with `docker compose up -d redis`. Production should use a managed Redis service configured through the `REDIS_URL` Infisical secret.
 
+
+## 2026-11-05
+
+### Checkpoint: Text Chunking (Step 6 started)
+
+- Last commit: `0eec741` (2026-10-23) — 24-hour Redis TTL (D-04). Steps 3 and 4 of the implementation order remain complete.
+- Uncommitted work: `TextChunkingService` (staged, new) and `TextChunkingServiceTest` (untracked, new).
+- `TextChunkingService.chunk(text, maxCharacters)` splits on blank-line paragraph boundaries and packs whole paragraphs into chunks of at most `maxCharacters`. Null or blank text returns an empty list. A non-positive limit throws `IllegalArgumentException`.
+- Tests cover blank input, an invalid limit, text within the limit, and multi-paragraph splitting with order preserved. They have not been run in this session.
+- The service is not yet wired into `FlashcardService`.
+
+### Known Gaps
+
+- A single paragraph longer than `maxCharacters` is emitted as one oversized chunk. It needs a fallback split on sentence or word boundaries.
+- Limits are in characters, not tokens. Token budgeting (step 5) will need to replace or inform the limit.
+- Slide-aware chunking for PPT input has not been started.
+- The Flyway/Hibernate startup blocker from 2026-10-20 has not been confirmed fixed in this log.
+
+### Next Step
+
+1. Run `mvn test -Dtest=TextChunkingServiceTest`.
+2. Add a test and a fallback for oversized paragraphs.
+3. Commit the chunking service and its tests.
+4. Wire chunking into `FlashcardService`: send chunks to Gemini in batches and merge the validated cards.
+
+### Checkpoint: Text Cleaning Added
+
+- Added `TextCleaningService` (+ `TextCleaningServiceTest`) and wired it into `FlashcardService` right after parsing, before text goes to Gemini.
+- Pipeline is now: parse -> clean -> (chunk, not wired yet) -> Gemini -> validate -> save.
+- Pre-existing failing test: `FlashcardServiceTest.processFlashcards_Success` expects progress 100 but `FlashcardService` sets 2 (HEAD already does this). Unrelated to cleaning; needs a decision on which value is right.
+- Decided: difficulty rules (easy = from document, medium = topic + some document, hard = scenario) go in the Gemini prompt only; no `sourceSnippet`. Add a per-card `topic` tag. Not implemented yet.
+
+## 2026-11-06
+
+### Checkpoint: Chunker Fallback Done
+
+- `TextChunkingService` now splits oversized paragraphs by sentence (`BreakIterator`), then by word, then hard-cut. Tests pass. Not yet wired into `FlashcardService`; nothing committed.
+- Pending small decisions: `PptParser` `setMasterByDefault(false)`, slim `TextCleaningService` to regex patterns only, add prompt rule to ignore ads/footers, progress value (2 vs 100) in `FlashcardServiceTest`.
+
+### Enterprise Design Review (revisit later)
+
+Based on code read so far; controller and security config were NOT reviewed, so section 2 items are open questions.
+
+**1. Reliability**
+- `@Async` is not durable: a restart leaves jobs stuck in `PROCESSING` until the Redis key expires. Fix: startup sweep marking stale jobs `FAILED` first; durable queue (Redis Streams/SQS/RabbitMQ) plus worker later.
+- Full upload held as `byte[]` in memory. Fix: object storage, pass a key.
+- Gemini calls lack timeout, retry, and backoff. With chunking, one failed chunk should not fail the job.
+- Job state in Redis and deck in PostgreSQL have no single source of truth. Make `saveDeck` idempotent by job ID and order writes so they can be retried.
+
+**2. Security and abuse (verify in controller)**
+- File validation by content type, size, and page/slide count; zip-bomb protection (POI `ZipSecureFile`); ideally parse outside the web process.
+- Authentication, per-user rate limits, and a daily Gemini cost cap.
+- Job IDs must be unguessable and tied to the owning user.
+- Prompt injection: delimit document text as data in the prompt; keep structured-output validation.
+- Rotate Neon password and Infisical client secret (exposed earlier).
+
+**3. Cost and quality**
+- Track tokens and cost per job; cap input size before calling Gemini.
+- Cache by file hash.
+- Version prompt and model name; store the version on each deck.
+- Build a small evaluation set of real documents and re-run it on prompt changes.
+
+**4. Operations**
+- Per-job metrics through OpenTelemetry (duration, failures, retries, tokens); job ID in logs; never log document text.
+- Health/readiness endpoints for Redis, PostgreSQL, and Gemini.
+- Graceful shutdown for in-flight jobs.
+- Dead-letter handling for jobs that fail after N retries.
+
+**5. Smaller design issues**
+- Split `FlashcardService.processFlashcards` into pipeline steps.
+- Make progress meaningful (chunks done / total chunks) and define the contract once.
+
+**Suggested order:** Gemini timeout/retry and per-chunk failure handling while wiring chunking -> file validation -> stuck-job sweep and object storage -> durable queue only if scale requires -> auth, quotas, and cost tracking before any public launch.
+
+### Checkpoint: Single-Call Generation (chunking reverted)
+
+- **Reverted** `TextChunkingService` and its test (never committed). First iteration uses one Gemini call per document. Revisit chunking only if real decks show coverage or output-limit problems.
+- Prompt now: AI chooses 5 to 30 cards by content amount; fewer is better than padding; difficulty mix is soft guidance (easy = from document, medium = topic + some document, hard = scenario); junk (ads, copyright, page numbers) ignored; document wrapped in `<document>` tags and treated as data (prompt-injection guard).
+- `tags` = document topic labels. `sourceSnippet` kept (required by validator); for hard cards it is the text the scenario is based on. It is not verified against the document.
+- `FlashcardValidationService`: difficulty must be easy/medium/hard (case-insensitive, normalized to lowercase); maximum 40 cards per response.
+- `TextCleaningService` slimmed to regex patterns only (page numbers, copyright, confidential); company footers and ads left to the prompt.
+- Dropped ideas: code-side card-count policy and config settings (unneeded while the AI decides the count).
+- Still open: `PptParser` `setMasterByDefault(false)`; progress value (2 vs 100) in `FlashcardServiceTest`; input-size guard (reject cleaned text over about 100,000 characters); possible truncated-JSON handling; nothing committed.

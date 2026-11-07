@@ -7,12 +7,61 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class FlashcardValidationServiceTest {
 
     private final FlashcardValidationService validationService = new FlashcardValidationService();
+
+    @Test
+    void acceptsUpToMaximumFlashcards() {
+        List<Flashcard> cards = java.util.Collections.nCopies(40, validFlashcard());
+
+        assertThatCode(() -> validationService.validate(cards))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void rejectsMoreThanMaximumFlashcards() {
+        List<Flashcard> cards = java.util.Collections.nCopies(41, validFlashcard());
+
+        assertThatThrownBy(() -> validationService.validate(cards))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("too many flashcards");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"easy", "medium", "hard"})
+    void acceptsSupportedDifficulties(String difficulty) {
+        Flashcard flashcard = validFlashcard();
+        flashcard.setDifficulty(difficulty);
+
+        assertThatCode(() -> validationService.validate(List.of(flashcard)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void normalizesDifficultyCaseAndWhitespace() {
+        Flashcard flashcard = validFlashcard();
+        flashcard.setDifficulty("  Medium ");
+
+        validationService.validate(List.of(flashcard));
+
+        assertThat(flashcard.getDifficulty()).isEqualTo("medium");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"moderate", "very hard", "1"})
+    void rejectsUnsupportedDifficulty(String difficulty) {
+        Flashcard flashcard = validFlashcard();
+        flashcard.setDifficulty(difficulty);
+
+        assertThatThrownBy(() -> validationService.validate(List.of(flashcard)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("difficulty must be one of");
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {"remember", "understand", "apply", "analyze"})

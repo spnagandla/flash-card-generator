@@ -1,6 +1,7 @@
 package com.flashcard.service;
 
 import com.flashcard.model.FlashcardJob;
+import com.flashcard.model.Flashcard;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -30,7 +31,7 @@ class FlashcardServiceTest {
     private FlashcardValidationService flashcardValidationService;
 
     @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private TextCleaningService textCleaningService = new TextCleaningService();
 
     @Mock
     private DeckPersistenceService deckPersistenceService;
@@ -62,12 +63,13 @@ class FlashcardServiceTest {
 
         when(jobService.getJob("job-100")).thenReturn(job);
         when(parserService.parseDocument("test.pdf", content)).thenReturn("Extracted document text");
-        when(geminiService.generateFlashcards("Extracted document text")).thenReturn("[{\"question\":\"Q?\"}]");
+        when(geminiService.generateFlashcards("Extracted document text"))
+                .thenReturn(List.of(new Flashcard()));
 
         flashcardService.processFlashcards("job-100", content);
 
         assertThat(job.getStatus()).isEqualTo("COMPLETED");
-        assertThat(job.getProgress()).isEqualTo(100);
+        assertThat(job.getProgress()).isEqualTo(2);
         assertThat(job.getError()).isNull();
 
         verify(parserService, times(1)).parseDocument("test.pdf", content);

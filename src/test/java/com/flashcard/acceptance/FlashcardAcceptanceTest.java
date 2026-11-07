@@ -17,6 +17,7 @@ import com.flashcard.service.FlashcardValidationService;
 import com.flashcard.service.GeminiService;
 import com.flashcard.service.JobService;
 import com.flashcard.service.ParserService;
+import com.flashcard.service.TextCleaningService;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -122,10 +123,10 @@ class FlashcardAcceptanceTest {
 
         flashcardService = new FlashcardService(
                 parserService,
+                new TextCleaningService(),
                 jobService,
                 geminiService,
                 new FlashcardValidationService(),
-                objectMapper,
                 deckPersistenceService
         );
         FlashcardController controller = new FlashcardController(
@@ -187,7 +188,9 @@ class FlashcardAcceptanceTest {
                 ]
                 """;
 
-        when(geminiService.generateFlashcards(anyString())).thenReturn(realisticLlmFlashcards);
+        when(geminiService.generateFlashcards(anyString())).thenReturn(
+                objectMapper.readValue(realisticLlmFlashcards,
+                        new com.fasterxml.jackson.core.type.TypeReference<java.util.List<com.flashcard.model.Flashcard>>() { }));
 
         // Step 2: User uploads the file
         MvcResult uploadResult = mockMvc.perform(multipart("/api/flashcards/upload").file(file))
