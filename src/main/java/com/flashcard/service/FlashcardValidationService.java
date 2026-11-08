@@ -10,7 +10,7 @@ import java.util.Set;
 @Service
 public class FlashcardValidationService {
 
-    private static final int MAX_FLASHCARDS = 40;
+    private static final int MAX_FLASHCARDS = 30;
 
     private static final Set<String> ALLOWED_DIFFICULTIES = Set.of(
             "easy",
@@ -25,6 +25,11 @@ public class FlashcardValidationService {
             "analyze"
     );
 
+    private static final Set<String> ALLOWED_GROUNDING_TYPES = Set.of(
+            "document",
+            "enrichment"
+    );
+
     public void validate(List<Flashcard> flashcards) {
         if(flashcards == null || flashcards.isEmpty()) {
             throw new IllegalArgumentException("Gemini returned no flashcards.");
@@ -35,6 +40,8 @@ public class FlashcardValidationService {
                     "Gemini returned too many flashcards (maximum " + MAX_FLASHCARDS + ")."
             );
         }
+
+        int enrichmentCount = 0;
 
         for(Flashcard flashcard : flashcards) {
 
@@ -72,9 +79,24 @@ public class FlashcardValidationService {
                 );
             }
 
+            if (isBlank(flashcard.getGroundingType())) {
+                throw new IllegalArgumentException("Flashcard grounding type is required.");
+            }
+
+            String groundingType = flashcard.getGroundingType().strip().toLowerCase(Locale.ROOT);
+            if (!ALLOWED_GROUNDING_TYPES.contains(groundingType)) {
+                throw new IllegalArgumentException(
+                        "Flashcard grounding type must be one of: document, enrichment."
+                );
+            }
+            flashcard.setGroundingType(groundingType);
+            if (groundingType.equals("enrichment")) {
+                enrichmentCount++;
+            }
+
             Double confidence = flashcard.getConfidence();
-            if (confidence == null || !Double.isFinite(confidence) || confidence < 0.0 || confidence > 1.0) {
-                throw new IllegalArgumentException("Flashcard confidence must be between 0.0 and 1.0.");
+            if (confidence == null || !Double.isFinite(confidence) || confidence < 0.70 || confidence > 0.99) {
+                throw new IllegalArgumentException("Flashcard confidence must be between 0.70 and 0.99.");
             }
 
             if (isBlank(flashcard.getSourceSnippet())) {
@@ -105,6 +127,12 @@ public class FlashcardValidationService {
                 throw new IllegalArgumentException("Flashcard tags must not be blank.");
             }
 
+        }
+
+        if (enrichmentCount * 5 > flashcards.size()) {
+            throw new IllegalArgumentException(
+                    "Enrichment flashcards must not exceed 20% of the deck."
+            );
         }
     }
 

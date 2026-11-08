@@ -182,6 +182,7 @@ class FlashcardAcceptanceTest {
                     "difficulty": "medium",
                     "tags": ["devops", "kubernetes", "containers"],
                     "cognitiveLevel": "understand",
+                    "groundingType": "document",
                     "confidence": 0.98,
                     "sourceSnippet": "Kubernetes is an open-source system for automating deployment, scaling, and management of containerized applications."
                   }
@@ -250,8 +251,11 @@ class FlashcardAcceptanceTest {
         // Cognitive level must be a valid Bloom taxonomy level
         assertThat(card.getCognitiveLevel()).isIn("remember", "understand", "apply", "analyze");
 
-        // Confidence must be between 0.0 and 1.0
-        assertThat(card.getConfidence()).isBetween(0.0, 1.0);
+        // Card must disclose whether it is document-grounded or enrichment
+        assertThat(card.getGroundingType()).isEqualTo("document");
+
+        // Low-confidence cards are discarded and 1.0 certainty is not accepted
+        assertThat(card.getConfidence()).isBetween(0.70, 0.99);
 
         // Source snippet must be present
         assertThat(card.getSourceSnippet()).isNotBlank();

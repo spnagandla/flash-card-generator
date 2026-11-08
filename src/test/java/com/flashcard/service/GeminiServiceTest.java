@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
@@ -102,6 +103,16 @@ class GeminiServiceTest {
         List<Flashcard> result = geminiService.generateFlashcards("AI is Artificial Intelligence");
 
         assertThat(result).containsExactly(flashcard);
+
+        ArgumentCaptor<String> systemPromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(requestSpec).system(systemPromptCaptor.capture());
+        assertThat(systemPromptCaptor.getValue())
+                .contains(
+                        "At least 80% of the cards must have groundingType \"document\"",
+                        "Up to 20% of the cards may have groundingType \"enrichment\"",
+                        "Never add enrichment merely to reach a card count",
+                        "Do not use 1.0"
+                );
     }
 
     @Test

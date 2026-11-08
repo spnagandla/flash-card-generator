@@ -165,6 +165,7 @@ Example completed response:
       "difficulty": "medium",
       "tags": ["spring", "dependency-injection"],
       "cognitiveLevel": "understand",
+      "groundingType": "document",
       "confidence": 0.95,
       "sourceSnippet": "Dependencies are supplied to a class by the framework."
     }

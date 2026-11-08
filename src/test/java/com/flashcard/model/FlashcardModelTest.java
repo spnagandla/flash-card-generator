@@ -21,6 +21,7 @@ class FlashcardModelTest {
         card.setDifficulty("easy");
         card.setTags(List.of("java", "jvm"));
         card.setCognitiveLevel("remember");
+        card.setGroundingType("document");
         card.setConfidence(0.99);
         card.setSourceSnippet("The JVM is responsible for bytecode execution.");
 
@@ -32,6 +33,7 @@ class FlashcardModelTest {
         assertThat(card.getDifficulty()).isEqualTo("easy");
         assertThat(card.getTags()).containsExactly("java", "jvm");
         assertThat(card.getCognitiveLevel()).isEqualTo("remember");
+        assertThat(card.getGroundingType()).isEqualTo("document");
         assertThat(card.getConfidence()).isEqualTo(0.99);
         assertThat(card.getSourceSnippet()).isEqualTo("The JVM is responsible for bytecode execution.");
     }
@@ -46,6 +48,7 @@ class FlashcardModelTest {
                 "medium",
                 List.of("tag1"),
                 "understand",
+                "document",
                 0.88,
                 "Snippet"
         );
@@ -57,6 +60,7 @@ class FlashcardModelTest {
                 "medium",
                 List.of("tag1"),
                 "understand",
+                "document",
                 0.88,
                 "Snippet"
         );

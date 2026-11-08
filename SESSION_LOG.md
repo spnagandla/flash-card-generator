@@ -190,3 +190,9 @@ Based on code read so far; controller and security config were NOT reviewed, so 
 - `TextCleaningService` slimmed to regex patterns only (page numbers, copyright, confidential); company footers and ads left to the prompt.
 - Dropped ideas: code-side card-count policy and config settings (unneeded while the AI decides the count).
 - Still open: `PptParser` `setMasterByDefault(false)`; progress value (2 vs 100) in `FlashcardServiceTest`; input-size guard (reject cleaned text over about 100,000 characters); possible truncated-JSON handling; nothing committed.
+
+### Checkpoint: Prompt Tuning After First Real PDF Output
+
+- First real run (Python `__init__.py` vs Java study guide, 15 cards) was accurate and well-structured. Findings: 10 easy / 5 medium / 0 hard; `confidence` was 1.0 on every card (not a useful signal, do not build filtering on it); overlapping cards (`__all__` twice, import caching twice); correct answer often the longest option; tags inconsistent (`init.py` vs `Python Packages` vs `Packages`).
+- Prompt updated: at least 2 hard scenario cards when 10+ cards; each card tests a different idea; answer and distractors similar in length and style; each incorrect explanation distinct; consistent tag wording and exact symbol names.
+- Open follow-ups: UI must shuffle answer/distractors (`answer` is a separate field); near-duplicate detection; tag normalization or fixed topic list; re-run the same PDF to compare.

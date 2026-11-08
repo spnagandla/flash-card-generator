@@ -39,6 +39,7 @@ class DeckPersistenceServiceTest {
                 "easy",
                 List.of("topic"),
                 "remember",
+                "document",
                 0.95,
                 "Source"
         );

@@ -98,6 +98,7 @@ class FlashcardSmokeTest {
                 "easy",
                 List.of("qa", "testing"),
                 "understand",
+                "document",
                 0.99,
                 "Smoke testing ensures basic stability."
         );

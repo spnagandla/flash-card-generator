@@ -148,6 +148,7 @@ class FlashcardControllerTest {
                 "easy",
                 List.of("spring"),
                 "remember",
+                "document",
                 0.95,
                 "Spring Boot makes it easy..."
         );
@@ -162,6 +163,7 @@ class FlashcardControllerTest {
                 .andExpect(jsonPath("$.flashcards").isArray())
                 .andExpect(jsonPath("$.flashcards[0].question").value("What is Spring Boot?"))
                 .andExpect(jsonPath("$.flashcards[0].answer").value("A Java framework"))
+                .andExpect(jsonPath("$.flashcards[0].groundingType").value("document"))
                 .andExpect(jsonPath("$.flashcards[0].confidence").value(0.95));
 
         verify(deckPersistenceService, times(1)).findDeck("job-123");

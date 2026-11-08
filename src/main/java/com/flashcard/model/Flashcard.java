@@ -18,6 +18,7 @@ public class Flashcard {
     private String difficulty;
     private List<String> tags;
     private String cognitiveLevel;
+    private String groundingType;
     private Double confidence;
     private String sourceSnippet;
 }
