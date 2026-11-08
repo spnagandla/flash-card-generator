@@ -19,7 +19,7 @@ public class JobService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String KEY_PREFIX = "job:";
-    private static final Duration JOB_TTL = Duration.ofHours(24);
+    private static final Duration JOB_TTL = Duration.ofHours(1);
 
     /**
      * Creates a new job record in Redis with a PENDING status.

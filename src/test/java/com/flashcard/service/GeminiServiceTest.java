@@ -111,6 +111,9 @@ class GeminiServiceTest {
                         "At least 80% of the cards must have groundingType \"document\"",
                         "Up to 20% of the cards may have groundingType \"enrichment\"",
                         "Never add enrichment merely to reach a card count",
+                        "Cover each major document topic once",
+                        "A scenario may be new",
+                        "Never label a direct recall question as \"hard\"",
                         "Do not use 1.0"
                 );
     }

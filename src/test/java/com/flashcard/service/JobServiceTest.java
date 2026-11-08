@@ -46,7 +46,7 @@ class JobServiceTest {
         verify(valueOperations, times(1)).set(
                 eq("job:" + jobId),
                 jobCaptor.capture(),
-                eq(Duration.ofHours(24))
+                eq(Duration.ofHours(1))
         );
 
         FlashcardJob capturedJob = jobCaptor.getValue();
@@ -67,7 +67,7 @@ class JobServiceTest {
 
         jobService.updateJob(job);
 
-        verify(valueOperations, times(1)).set("job:job-456", job, Duration.ofHours(24));
+        verify(valueOperations, times(1)).set("job:job-456", job, Duration.ofHours(1));
     }
 
     @Test

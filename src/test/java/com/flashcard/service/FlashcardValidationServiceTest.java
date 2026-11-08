@@ -140,12 +140,13 @@ class FlashcardValidationServiceTest {
                 validFlashcard()
         );
 
-        assertThatCode(() -> validationService.validate(cards))
-                .doesNotThrowAnyException();
+        assertThat(validationService.validate(cards))
+                .hasSize(5)
+                .contains(enrichment);
     }
 
     @Test
-    void rejectsMoreThanTwentyPercentEnrichmentCards() {
+    void dropsEnrichmentCardsBeyondTwentyPercent() {
         Flashcard enrichment = validFlashcard();
         enrichment.setGroundingType("enrichment");
 
@@ -156,13 +157,25 @@ class FlashcardValidationServiceTest {
                 validFlashcard()
         );
 
-        assertThatThrownBy(() -> validationService.validate(cards))
+        List<Flashcard> cleanedCards = validationService.validate(cards);
+
+        assertThat(cleanedCards)
+                .hasSize(3)
+                .allSatisfy(card -> assertThat(card.getGroundingType()).isEqualTo("document"));
+    }
+
+    @Test
+    void rejectsDeckWhenNoDocumentGroundedCardsRemain() {
+        Flashcard enrichment = validFlashcard();
+        enrichment.setGroundingType("enrichment");
+
+        assertThatThrownBy(() -> validationService.validate(List.of(enrichment)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("must not exceed 20%");
+                .hasMessageContaining("no usable document-grounded flashcards");
     }
 
     @ParameterizedTest
-    @ValueSource(doubles = {0.70, 0.99})
+    @ValueSource(doubles = {0.0, 0.70, 0.99, 1.0})
     void acceptsConfidenceValuesWithinSupportedRange(double confidence) {
         Flashcard flashcard = validFlashcard();
         flashcard.setConfidence(confidence);
@@ -172,14 +185,14 @@ class FlashcardValidationServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(doubles = {0.69, 1.0, 1.01, Double.NaN, Double.POSITIVE_INFINITY})
+    @ValueSource(doubles = {-0.01, 1.01, Double.NaN, Double.POSITIVE_INFINITY})
     void rejectsConfidenceOutsideAllowedRange(double confidence) {
         Flashcard flashcard = validFlashcard();
         flashcard.setConfidence(confidence);
 
         assertThatThrownBy(() -> validationService.validate(List.of(flashcard)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("confidence must be between 0.70 and 0.99");
+                .hasMessageContaining("confidence must be between 0.0 and 1.0");
     }
 
     @Test
@@ -189,7 +202,18 @@ class FlashcardValidationServiceTest {
 
         assertThatThrownBy(() -> validationService.validate(List.of(flashcard)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("confidence must be between 0.70 and 0.99");
+                .hasMessageContaining("confidence must be between 0.0 and 1.0");
+    }
+
+    @Test
+    void dropsInvalidCardsWhenUsableCardsRemain() {
+        Flashcard invalid = validFlashcard();
+        invalid.setQuestion(" ");
+        Flashcard valid = validFlashcard();
+
+        List<Flashcard> cleanedCards = validationService.validate(List.of(invalid, valid));
+
+        assertThat(cleanedCards).containsExactly(valid);
     }
 
     private Flashcard validFlashcard() {

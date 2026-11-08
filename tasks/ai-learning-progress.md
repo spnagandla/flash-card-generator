@@ -132,7 +132,7 @@ Near-term changes:
 
 - `extractedText` and `flashcardsJson` have been removed from `FlashcardJob`,
 - Redis now retains only job ID, status, progress, file name, and error metadata,
-- job entries now expire 24 hours after their latest update,
+- job entries now expire 1 hour after their latest update,
 - completed result retrieval now reads PostgreSQL rather than Redis,
 - teach and implement chunking without introducing RAG,
 - keep local Redis in Docker and use `REDIS_URL` for a managed production instance.

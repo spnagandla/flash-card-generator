@@ -26,13 +26,14 @@ public class FlashcardService {
     private final DeckPersistenceService deckPersistenceService;
 
     /**
-     * The core background task. 
+     * The core background task.
+     *
      * @Async tells Spring to run this in a separate thread.
      */
     @Async
     public void processFlashcards(String jobId, byte[] fileContent) {
         log.info("Starting background processing for job: {}", jobId);
-        
+
         // 1. Retrieve the job from Redis
         FlashcardJob job = jobService.getJob(jobId);
         if (job == null) {
@@ -45,31 +46,31 @@ public class FlashcardService {
             job.setStatus("PROCESSING");
             job.setProgress(1);
             jobService.updateJob(job);
-            
+
             // 3. Extract text from the document
             log.info("Parsing document for job: {}", jobId);
             String text = textCleaningService.clean(
                     parserService.parseDocument(job.getFileName(), fileContent));
-            
+
             // 4. Update progress
             log.info("Extraction complete for job: {}. Length: {} chars.", jobId, text.length());
 
 
             log.info("Sending extracted text to Gemini for job: {}", jobId);
             List<Flashcard> flashCards = geminiService.generateFlashcards(text);
-            flashcardValidationService.validate(flashCards);
+            List<Flashcard> validatedFlashCards = flashcardValidationService.validate(flashCards);
 
             log.info("Saving validated cards to PostgreSQL for job: {}", jobId);
-            deckPersistenceService.saveDeck(jobId, job.getFileName(), flashCards);
-            
+            deckPersistenceService.saveDeck(jobId, job.getFileName(), validatedFlashCards);
+
             // 5. Mark as COMPLETED (for now)
             job.setStatus("COMPLETED");
             job.setProgress(2);
             jobService.updateJob(job);
-            
+
         } catch (Exception e) {
             log.error("Error processing job: " + jobId, e);
-            
+
             // 6. Update status to FAILED so the user knows what happened
             job.setStatus("FAILED");
             job.setError(e.getMessage());

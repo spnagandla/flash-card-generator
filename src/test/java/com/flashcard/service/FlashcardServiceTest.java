@@ -63,8 +63,11 @@ class FlashcardServiceTest {
 
         when(jobService.getJob("job-100")).thenReturn(job);
         when(parserService.parseDocument("test.pdf", content)).thenReturn("Extracted document text");
+        List<Flashcard> generatedCards = List.of(new Flashcard());
+        List<Flashcard> validatedCards = List.of(new Flashcard());
         when(geminiService.generateFlashcards("Extracted document text"))
-                .thenReturn(List.of(new Flashcard()));
+                .thenReturn(generatedCards);
+        when(flashcardValidationService.validate(generatedCards)).thenReturn(validatedCards);
 
         flashcardService.processFlashcards("job-100", content);
 
@@ -75,7 +78,7 @@ class FlashcardServiceTest {
         verify(parserService, times(1)).parseDocument("test.pdf", content);
         verify(geminiService, times(1)).generateFlashcards("Extracted document text");
         verify(flashcardValidationService, times(1)).validate(anyList());
-        verify(deckPersistenceService, times(1)).saveDeck(eq("job-100"), eq("test.pdf"), anyList());
+        verify(deckPersistenceService, times(1)).saveDeck("job-100", "test.pdf", validatedCards);
         // updateJob is called twice: once for PROCESSING, once for COMPLETED
         verify(jobService, times(2)).updateJob(job);
     }
