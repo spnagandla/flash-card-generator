@@ -18,6 +18,7 @@ import java.util.UUID;
 public class JobService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final JobStatusLongPollingService longPollingService;
     private static final String KEY_PREFIX = "job:";
     private static final Duration JOB_TTL = Duration.ofHours(1);
 
@@ -36,6 +37,7 @@ public class JobService {
 
         log.info("Creating new job in Redis: {} for file: {}", jobId, fileName);
         saveWithTtl(job);
+        longPollingService.publish(job);
         
         return jobId;
     }
@@ -46,6 +48,7 @@ public class JobService {
     public void updateJob(FlashcardJob job) {
         log.debug("Updating job status in Redis: {} to {}", job.getId(), job.getStatus());
         saveWithTtl(job);
+        longPollingService.publish(job);
     }
 
     /**

@@ -6,6 +6,7 @@ import com.flashcard.model.FlashcardJob;
 import com.flashcard.service.DeckPersistenceService;
 import com.flashcard.service.FlashcardService;
 import com.flashcard.service.JobService;
+import com.flashcard.service.JobStatusLongPollingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class FlashcardControllerTest {
 
     @Mock
     private DeckPersistenceService deckPersistenceService;
+
+    @Mock
+    private JobStatusLongPollingService longPollingService;
 
     @InjectMocks
     private FlashcardController flashcardController;

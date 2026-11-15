@@ -36,6 +36,7 @@ class FlashcardSmokeTest {
         GeminiService geminiService = mock(GeminiService.class);
         FlashcardValidationService flashcardValidationService = new FlashcardValidationService();
         DeckPersistenceService deckPersistenceService = mock(DeckPersistenceService.class);
+        JobStatusLongPollingService longPollingService = new JobStatusLongPollingService();
 
         FlashcardService flashcardService = new FlashcardService(
                 parserService,
@@ -45,7 +46,8 @@ class FlashcardSmokeTest {
                 flashcardValidationService,
                 deckPersistenceService
         );
-        FlashcardController controller = new FlashcardController(jobService, flashcardService, deckPersistenceService);
+        FlashcardController controller = new FlashcardController(
+                jobService, flashcardService, deckPersistenceService, longPollingService);
 
         assertThat(controller).isNotNull();
         assertThat(flashcardService).isNotNull();
@@ -73,7 +75,9 @@ class FlashcardSmokeTest {
         JobService jobService = mock(JobService.class);
         FlashcardService flashcardService = mock(FlashcardService.class);
         DeckPersistenceService deckPersistenceService = mock(DeckPersistenceService.class);
-        FlashcardController controller = new FlashcardController(jobService, flashcardService, deckPersistenceService);
+        JobStatusLongPollingService longPollingService = new JobStatusLongPollingService();
+        FlashcardController controller = new FlashcardController(
+                jobService, flashcardService, deckPersistenceService, longPollingService);
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 

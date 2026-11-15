@@ -26,12 +26,15 @@ class JobServiceTest {
     @Mock
     private ValueOperations<String, Object> valueOperations;
 
+    @Mock
+    private JobStatusLongPollingService longPollingService;
+
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        jobService = new JobService(redisTemplate);
+        jobService = new JobService(redisTemplate, longPollingService);
     }
 
     @Test
@@ -54,6 +57,7 @@ class JobServiceTest {
         assertThat(capturedJob.getFileName()).isEqualTo(fileName);
         assertThat(capturedJob.getStatus()).isEqualTo("PENDING");
         assertThat(capturedJob.getProgress()).isZero();
+        verify(longPollingService).publish(capturedJob);
     }
 
     @Test
@@ -68,6 +72,7 @@ class JobServiceTest {
         jobService.updateJob(job);
 
         verify(valueOperations, times(1)).set("job:job-456", job, Duration.ofHours(1));
+        verify(longPollingService).publish(job);
     }
 
     @Test

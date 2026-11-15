@@ -16,6 +16,7 @@ import com.flashcard.service.FlashcardService;
 import com.flashcard.service.FlashcardValidationService;
 import com.flashcard.service.GeminiService;
 import com.flashcard.service.JobService;
+import com.flashcard.service.JobStatusLongPollingService;
 import com.flashcard.service.ParserService;
 import com.flashcard.service.TextCleaningService;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -113,7 +114,8 @@ class FlashcardAcceptanceTest {
                 Optional.ofNullable(deckStore.get(invocation.getArgument(0)))
         );
 
-        jobService = new JobService(redisTemplate);
+        JobStatusLongPollingService longPollingService = new JobStatusLongPollingService();
+        jobService = new JobService(redisTemplate, longPollingService);
 
         ParserService parserService = new ParserService(List.of(
                 new PdfParser(),
@@ -132,7 +134,8 @@ class FlashcardAcceptanceTest {
         FlashcardController controller = new FlashcardController(
                 jobService,
                 flashcardService,
-                deckPersistenceService
+                deckPersistenceService,
+                longPollingService
         );
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();

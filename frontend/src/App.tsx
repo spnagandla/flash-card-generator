@@ -5,6 +5,7 @@ import Toast from './Toast'
 import UploadArea from './UploadArea'
 
 const TOAST_DISPLAY_TIME = 4000
+const STATUS_RETRY_DELAY = 10_000
 
 type ToastMessage = {
     type: 'error' | 'success'
@@ -16,6 +17,16 @@ type UploadResponse = {
     jobId: string
 }
 
+type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+
+type JobStatusResponse = {
+    jobId: string
+    status: JobStatus
+    fileName: string
+    progress: number
+    error: string | null
+}
+
 function App() {
     const allowedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx']
     const [showUpload, setShowUpload] = useState(false)
@@ -24,7 +35,15 @@ function App() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [jobId, setJobId] = useState<string | null>(null)
+    const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null)
     const [toast, setToast] = useState<ToastMessage | null>(null)
+
+    const isJobProcessing =
+        jobId !== null &&
+        (jobStatus === null ||
+            jobStatus.status === 'PENDING' ||
+            jobStatus.status === 'PROCESSING')
+    const isBusy = isUploading || isJobProcessing
 
     // Start a timer whenever a notification appears.
     useEffect(() => {
@@ -39,6 +58,79 @@ function App() {
         return () => window.clearTimeout(timerId)
     }, [toast])
 
+    // A jobId means the backend accepted the file. Long-poll until that job finishes.
+    useEffect(() => {
+        if (jobId === null) {
+            return
+        }
+
+        const abortController = new AbortController()
+        let timeoutId: number | undefined
+        let hasShownStatusError = false
+        let lastKnownStatus: JobStatus | null = null
+
+        async function checkJobStatus() {
+            try {
+                const statusQuery = lastKnownStatus === null
+                    ? ''
+                    : `?knownStatus=${encodeURIComponent(lastKnownStatus)}`
+                const response = await fetch(
+                    `/api/flashcards/status/${jobId}/wait${statusQuery}`,
+                    { signal: abortController.signal },
+                )
+
+                if (response.status === 204) {
+                    checkJobStatus()
+                    return
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Status request failed with status ${response.status}`)
+                }
+
+                const statusResponse: JobStatusResponse = await response.json()
+                setJobStatus(statusResponse)
+                lastKnownStatus = statusResponse.status
+                hasShownStatusError = false
+
+                const isFinished =
+                    statusResponse.status === 'COMPLETED' ||
+                    statusResponse.status === 'FAILED'
+
+                if (!isFinished) {
+                    checkJobStatus()
+                }
+            } catch (error) {
+                if (error instanceof DOMException && error.name === 'AbortError') {
+                    return
+                }
+
+                console.error('Failed to check job status:', error)
+
+                if (!hasShownStatusError) {
+                    setToast({
+                        type: 'error',
+                        title: 'Status check failed',
+                        message: 'Retrying the generation status automatically.',
+                    })
+                    hasShownStatusError = true
+                }
+
+                timeoutId = window.setTimeout(checkJobStatus, STATUS_RETRY_DELAY)
+            }
+        }
+
+        checkJobStatus()
+
+        return () => {
+            abortController.abort()
+
+            if (timeoutId !== undefined) {
+                window.clearTimeout(timeoutId)
+            }
+        }
+    }, [jobId])
+
     function isFileAllowed(file: File) {
         const extension = file.name.split('.').pop()?.toLowerCase()
         return extension !== undefined && allowedExtensions.includes(extension)
@@ -46,6 +138,7 @@ function App() {
 
     function processFile(file: File | null) {
         setJobId(null)
+        setJobStatus(null)
 
         if (file === null) {
             setSelectedFile(null)
@@ -92,7 +185,7 @@ function App() {
     }
 
     async function handleGenerateClick() {
-        if (selectedFile === null || isUploading) {
+        if (selectedFile === null || isBusy) {
             return
         }
 
@@ -101,6 +194,7 @@ function App() {
 
         setIsUploading(true)
         setJobId(null)
+        setJobStatus(null)
 
         try {
             const response = await fetch('/api/flashcards/upload', {
@@ -155,6 +249,7 @@ function App() {
                         {/* State and callback functions pass from App to UploadArea as props. */}
                         <UploadArea
                             selectedFile={selectedFile}
+                            disabled={isBusy}
                             onFileChange={handleFileChange}
                             onDragOver={handleDragOver}
                             onDrop={handleDrop}
@@ -165,21 +260,57 @@ function App() {
                                 <button
                                     className="generate-button"
                                     type="button"
-                                    disabled={isUploading}
+                                    disabled={isBusy}
                                     onClick={handleGenerateClick}
                                 >
-                                    {isUploading && (
+                                    {isBusy && (
                                         <span className="button-spinner" aria-hidden="true" />
                                     )}
                                     {isUploading
-                                        ? 'Sending document...'
-                                        : 'Generate flashcards'}
+                                        ? 'Uploading document...'
+                                        : isJobProcessing
+                                          ? 'Generating flashcards...'
+                                          : 'Generate flashcards'}
                                 </button>
 
-                                {jobId && (
-                                    <p className="job-reference">
-                                        Job started: <code>{jobId}</code>
+                                {jobId && jobStatus === null && (
+                                    <p className="job-reference" role="status">
+                                        Waiting for processing to start...
                                     </p>
+                                )}
+
+                                {jobStatus && (
+                                    <div className="job-status" role="status">
+                                        <div className="job-status-heading">
+                                            <strong>{jobStatus.fileName}</strong>
+                                            <span>{jobStatus.status}</span>
+                                        </div>
+
+                                        {(jobStatus.status === 'PENDING' ||
+                                            jobStatus.status === 'PROCESSING') && (
+                                            <>
+                                                <progress
+                                                    aria-label="Flashcard generation in progress"
+                                                />
+                                                <p>
+                                                    {jobStatus.status === 'PENDING'
+                                                        ? 'Waiting for processing to start...'
+                                                        : 'Generating your flashcards...'}
+                                                </p>
+                                            </>
+                                        )}
+
+                                        {jobStatus.status === 'COMPLETED' && (
+                                            <p>Your flashcards are ready.</p>
+                                        )}
+
+                                        {jobStatus.status === 'FAILED' && (
+                                            <p>
+                                                Generation failed:{' '}
+                                                {jobStatus.error ?? 'Unknown error'}
+                                            </p>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         )}

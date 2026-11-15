@@ -8,12 +8,14 @@ import com.flashcard.model.UploadResponse;
 import com.flashcard.service.DeckPersistenceService;
 import com.flashcard.service.FlashcardService;
 import com.flashcard.service.JobService;
+import com.flashcard.service.JobStatusLongPollingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.context.request.async.DeferredResult;
 
 /**
  * REST Controller for flashcard operations.
@@ -29,6 +31,7 @@ public class FlashcardController {
     private final JobService jobService;
     private final FlashcardService flashcardService;
     private final DeckPersistenceService deckPersistenceService;
+    private final JobStatusLongPollingService longPollingService;
 
     /**
      * Endpoint to upload a document and start the background processing.
@@ -62,13 +65,42 @@ public class FlashcardController {
             return ResponseEntity.notFound().build();
         }
         
-        return ResponseEntity.ok(new JobStatusResponse(
-                job.getId(),
-                job.getStatus(),
-                job.getFileName(),
-                job.getProgress(),
-                job.getError()
-        ));
+        return ResponseEntity.ok(JobStatusLongPollingService.toResponse(job));
+    }
+
+    /**
+     * Waits until the job changes from the status already known by the browser.
+     * Returns 204 after the long-poll timeout so the browser can reconnect.
+     */
+    @GetMapping("/status/{jobId}/wait")
+    public DeferredResult<ResponseEntity<JobStatusResponse>> waitForStatusChange(
+            @PathVariable String jobId,
+            @RequestParam(required = false) String knownStatus
+    ) {
+        FlashcardJob currentJob = jobService.getJob(jobId);
+        if (currentJob == null) {
+            return completedResult(ResponseEntity.notFound().build());
+        }
+
+        boolean statusAlreadyChanged = knownStatus == null ||
+                !knownStatus.equals(currentJob.getStatus()) ||
+                isFinished(currentJob.getStatus());
+
+        if (statusAlreadyChanged) {
+            return completedResult(ResponseEntity.ok(
+                    JobStatusLongPollingService.toResponse(currentJob)));
+        }
+
+        DeferredResult<ResponseEntity<JobStatusResponse>> result =
+                longPollingService.waitForUpdate(jobId);
+
+        // Re-read after registration so an update between the first read and registration is not missed.
+        FlashcardJob latestJob = jobService.getJob(jobId);
+        if (latestJob != null && !knownStatus.equals(latestJob.getStatus())) {
+            longPollingService.publish(latestJob);
+        }
+
+        return result;
     }
 
     @GetMapping("/result/{jobId}")
@@ -94,5 +126,17 @@ public class FlashcardController {
         }
 
         return ResponseEntity.notFound().build();
+    }
+
+    private boolean isFinished(String status) {
+        return "COMPLETED".equals(status) || "FAILED".equals(status);
+    }
+
+    private DeferredResult<ResponseEntity<JobStatusResponse>> completedResult(
+            ResponseEntity<JobStatusResponse> response
+    ) {
+        DeferredResult<ResponseEntity<JobStatusResponse>> result = new DeferredResult<>();
+        result.setResult(response);
+        return result;
     }
 }

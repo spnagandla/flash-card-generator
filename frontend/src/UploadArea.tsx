@@ -5,6 +5,7 @@ import type { ChangeEvent, DragEvent } from 'react'
 type UploadAreaProps = {
     // App owns this state; UploadArea only reads and displays it.
     selectedFile: File | null
+    disabled: boolean
 
     // These callbacks let UploadArea report browser events back to App.
     onFileChange: (event: ChangeEvent<HTMLInputElement>) => void
@@ -15,6 +16,7 @@ type UploadAreaProps = {
 // Destructuring extracts each value from the single props object.
 function UploadArea({
     selectedFile,
+    disabled,
     onFileChange,
     onDragOver,
     onDrop,
@@ -22,8 +24,13 @@ function UploadArea({
     const [isDragging, setIsDragging] = useState(false)
 
     function handleDragOver(event: DragEvent<HTMLLabelElement>) {
-        setIsDragging(true)
         onDragOver(event)
+
+        if (disabled) {
+            return
+        }
+
+        setIsDragging(true)
     }
 
     function handleDragLeave(event: DragEvent<HTMLLabelElement>) {
@@ -34,6 +41,12 @@ function UploadArea({
 
     function handleDrop(event: DragEvent<HTMLLabelElement>) {
         setIsDragging(false)
+
+        if (disabled) {
+            event.preventDefault()
+            return
+        }
+
         onDrop(event)
     }
 
@@ -47,7 +60,8 @@ function UploadArea({
 
     return (
         <label
-            className={`upload-area${isDragging ? ' upload-area-active' : ''}`}
+            className={`upload-area${isDragging ? ' upload-area-active' : ''}${disabled ? ' upload-area-disabled' : ''}`}
+            aria-disabled={disabled}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -56,6 +70,7 @@ function UploadArea({
                 className="file-input"
                 type="file"
                 accept=".pdf,.doc,.docx,.ppt,.pptx"
+                disabled={disabled}
                 onChange={onFileChange}
             />
 
