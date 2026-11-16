@@ -6,6 +6,15 @@ import UploadArea from './UploadArea'
 
 const TOAST_DISPLAY_TIME = 4000
 const STATUS_RETRY_DELAY = 10_000
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+const CAPABILITIES = [
+    'PDF, Word, and PowerPoint',
+    'Multiple-choice practice',
+    'Plausible distractors',
+    'Answer explanations',
+    'Source snippets',
+    'Difficulty levels',
+]
 
 type ToastMessage = {
     type: 'error' | 'success'
@@ -143,7 +152,7 @@ function App() {
         if (file === null) {
             setSelectedFile(null)
             setToast(null)
-            return
+            return true
         }
 
         if (!isFileAllowed(file)) {
@@ -153,7 +162,17 @@ function App() {
                 title: 'Unsupported file',
                 message: 'Please select a PDF, Word, or PowerPoint file.',
             })
-            return
+            return false
+        }
+
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            setSelectedFile(null)
+            setToast({
+                type: 'error',
+                title: 'File too large',
+                message: `${file.name} exceeds the 25 MB upload limit.`,
+            })
+            return false
         }
 
         setSelectedFile(file)
@@ -162,6 +181,7 @@ function App() {
             title: 'File added',
             message: `${file.name} is ready to generate.`,
         })
+        return true
     }
 
     function handleCreateClick() {
@@ -170,18 +190,26 @@ function App() {
 
     function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0] ?? null
-        processFile(file)
+        const accepted = processFile(file)
+
+        if (!accepted) {
+            event.target.value = ''
+        }
     }
 
-    function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+    function handleDragOver(event: DragEvent<HTMLDivElement>) {
         event.preventDefault()
     }
 
-    function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    function handleDrop(event: DragEvent<HTMLDivElement>) {
         event.preventDefault()
 
         const file = event.dataTransfer.files[0]
         processFile(file)
+    }
+
+    function handleRemoveFile() {
+        processFile(null)
     }
 
     async function handleGenerateClick() {
@@ -230,26 +258,29 @@ function App() {
             <section className="hero">
                 <p className="hero-label">AI-powered study companion</p>
                 <h1 className="hero-title">
-                    Turn your documents into smarter flashcards
+                    Turn your documents into interactive flashcards
                 </h1>
                 <p className="hero-description">
                     Upload your study material and generate an interactive flashcard
                     deck in minutes.
                 </p>
 
-                <button
-                    className="primary-button"
-                    type="button"
-                    onClick={handleCreateClick}
-                >
-                    Create flashcards
-                </button>
+                {!showUpload && (
+                    <button
+                        className="primary-button"
+                        type="button"
+                        onClick={handleCreateClick}
+                    >
+                        Create Flashcards
+                    </button>
+                )}
                 {showUpload && (
                     <>
                         {/* State and callback functions pass from App to UploadArea as props. */}
                         <UploadArea
                             selectedFile={selectedFile}
                             disabled={isBusy}
+                            onRemoveFile={handleRemoveFile}
                             onFileChange={handleFileChange}
                             onDragOver={handleDragOver}
                             onDrop={handleDrop}
@@ -267,10 +298,10 @@ function App() {
                                         <span className="button-spinner" aria-hidden="true" />
                                     )}
                                     {isUploading
-                                        ? 'Uploading document...'
+                                        ? 'Uploading Document...'
                                         : isJobProcessing
-                                          ? 'Generating flashcards...'
-                                          : 'Generate flashcards'}
+                                          ? 'Generating Flashcards...'
+                                          : 'Generate Flashcards'}
                                 </button>
 
                                 {jobId && jobStatus === null && (
@@ -317,11 +348,64 @@ function App() {
                     </>
                 )}
             </section>
+
+            <section className="capability-strip" aria-label="Product capabilities">
+                <div className="capability-track">
+                    <ul className="capability-list">
+                        {CAPABILITIES.map((capability) => (
+                            <li key={capability}>{capability}</li>
+                        ))}
+                    </ul>
+                    <ul className="capability-list" aria-hidden="true">
+                        {CAPABILITIES.map((capability) => (
+                            <li key={`${capability}-duplicate`}>{capability}</li>
+                        ))}
+                    </ul>
+                </div>
+            </section>
+
+            <section className="learning-benefits" aria-labelledby="benefits-title">
+                <p className="section-eyebrow">Currently in early access</p>
+                <h2 id="benefits-title">Built for focused learning</h2>
+                <p className="section-description">
+                    Move from uploaded material to active practice with questions,
+                    feedback, and context designed to reinforce understanding.
+                </p>
+
+                <div className="benefit-grid">
+                    <article className="benefit-card">
+                        <span className="benefit-number" aria-hidden="true">01</span>
+                        <h3>Grounded in your material</h3>
+                        <p>
+                            Generate questions from the concepts in your PDF, Word,
+                            or PowerPoint document.
+                        </p>
+                    </article>
+                    <article className="benefit-card">
+                        <span className="benefit-number" aria-hidden="true">02</span>
+                        <h3>Practice active recall</h3>
+                        <p>
+                            Work through multiple-choice questions with plausible
+                            distractors instead of passively rereading notes.
+                        </p>
+                    </article>
+                    <article className="benefit-card">
+                        <span className="benefit-number" aria-hidden="true">03</span>
+                        <h3>Learn from feedback</h3>
+                        <p>
+                            Review explanations and source context to understand why
+                            an answer is correct.
+                        </p>
+                    </article>
+                </div>
+            </section>
+
             {toast && (
                 <Toast
                     type={toast.type}
                     title={toast.title}
                     message={toast.message}
+                    onClose={() => setToast(null)}
                 />
             )}
         </main>

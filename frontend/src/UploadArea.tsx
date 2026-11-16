@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent } from 'react'
 
 // Props are inputs that App passes to this child component.
@@ -6,24 +6,27 @@ type UploadAreaProps = {
     // App owns this state; UploadArea only reads and displays it.
     selectedFile: File | null
     disabled: boolean
+    onRemoveFile: () => void
 
     // These callbacks let UploadArea report browser events back to App.
     onFileChange: (event: ChangeEvent<HTMLInputElement>) => void
-    onDragOver: (event: DragEvent<HTMLLabelElement>) => void
-    onDrop: (event: DragEvent<HTMLLabelElement>) => void
+    onDragOver: (event: DragEvent<HTMLDivElement>) => void
+    onDrop: (event: DragEvent<HTMLDivElement>) => void
 }
 
 // Destructuring extracts each value from the single props object.
 function UploadArea({
     selectedFile,
     disabled,
+    onRemoveFile,
     onFileChange,
     onDragOver,
     onDrop,
 }: Readonly<UploadAreaProps>) {
     const [isDragging, setIsDragging] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
-    function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+    function handleDragOver(event: DragEvent<HTMLDivElement>) {
         onDragOver(event)
 
         if (disabled) {
@@ -33,13 +36,13 @@ function UploadArea({
         setIsDragging(true)
     }
 
-    function handleDragLeave(event: DragEvent<HTMLLabelElement>) {
+    function handleDragLeave(event: DragEvent<HTMLDivElement>) {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             setIsDragging(false)
         }
     }
 
-    function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    function handleDrop(event: DragEvent<HTMLDivElement>) {
         setIsDragging(false)
 
         if (disabled) {
@@ -48,6 +51,14 @@ function UploadArea({
         }
 
         onDrop(event)
+    }
+
+    function handleRemoveFile() {
+        if (fileInputRef.current !== null) {
+            fileInputRef.current.value = ''
+        }
+
+        onRemoveFile()
     }
 
     function formatFileSize(size: number) {
@@ -59,7 +70,7 @@ function UploadArea({
     }
 
     return (
-        <label
+        <div
             className={`upload-area${isDragging ? ' upload-area-active' : ''}${disabled ? ' upload-area-disabled' : ''}`}
             aria-disabled={disabled}
             onDragOver={handleDragOver}
@@ -67,6 +78,8 @@ function UploadArea({
             onDrop={handleDrop}
         >
             <input
+                ref={fileInputRef}
+                id="study-material-upload"
                 className="file-input"
                 type="file"
                 accept=".pdf,.doc,.docx,.ppt,.pptx"
@@ -74,7 +87,7 @@ function UploadArea({
                 onChange={onFileChange}
             />
 
-            <span className="upload-main">
+            <label className="upload-main" htmlFor="study-material-upload">
                 <span className="upload-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
                         <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15.5v2A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-2" />
@@ -101,10 +114,10 @@ function UploadArea({
                         <path d="M7.5 5 12.5 10l-5 5" />
                     </svg>
                 </span>
-            </span>
+            </label>
 
             {selectedFile && (
-                <span className="selected-file">
+                <div className="selected-file">
                     <span className="selected-file-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                             <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
@@ -115,8 +128,16 @@ function UploadArea({
                         <strong>{selectedFile.name}</strong>
                         <span>{formatFileSize(selectedFile.size)} · Ready to generate</span>
                     </span>
-                    <span className="selected-file-action">Replace</span>
-                </span>
+                    <button
+                        className="selected-file-action"
+                        type="button"
+                        disabled={disabled}
+                        aria-label={`Remove ${selectedFile.name}`}
+                        onClick={handleRemoveFile}
+                    >
+                        &times;
+                    </button>
+                </div>
             )}
 
             <span className="upload-footer">
@@ -127,7 +148,7 @@ function UploadArea({
                     <span>PPTX</span>
                 </span>
             </span>
-        </label>
+        </div>
     )
 }
 
